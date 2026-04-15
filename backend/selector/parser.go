@@ -5,7 +5,7 @@ import (
 	"strings"
 	"unicode"
 
-	"tubes2/backend/model"
+	"tubes2/model"
 )
 
 // mengubah string selector CSS jadi SelectorChain

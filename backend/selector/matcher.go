@@ -3,7 +3,7 @@ package selector
 import (
 	"strings"
 
-	"tubes2/backend/model"
+	"tubes2/model"
 )
 
 // cocokin node dengan selector

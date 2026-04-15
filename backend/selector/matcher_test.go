@@ -3,8 +3,8 @@ package selector_test
 import (
 	"testing"
 
-	"tubes2/backend/model"
-	"tubes2/backend/selector"
+	"tubes2/model"
+	"tubes2/selector"
 )
 
 func buildMatcherTree() *model.DOMNode {
