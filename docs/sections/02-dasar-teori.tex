@@ -1,0 +1,157 @@
+\section{Dasar Teori}
+
+\subsection{Document Object Model (DOM)}
+
+Document Object Model (DOM) merupakan representasi terstruktur dari sebuah halaman web yang memungkinkan pengembang untuk mengakses, memodifikasi, dan mengontrol isi serta struktur halaman menggunakan program, seperti JavaScript. DOM menjadi dasar dari berbagai interaksi dinamis pada website, seperti pembaruan konten secara real-time, validasi form, dan antarmuka interaktif.
+
+DOM berbentuk struktur pohon (\textit{tree}), di mana setiap tag HTML direpresentasikan sebagai node. Elemen \texttt{<html>} berada pada posisi paling atas sebagai root, yang memiliki child berupa \texttt{<head>} dan \texttt{<body>}. Elemen-elemen tersebut kemudian memiliki child lain seperti \texttt{<title>}, \texttt{<div>}, \texttt{<h1>}, \texttt{<p>}, dan sebagainya.
+
+Elemen yang memiliki anak disebut sebagai \textit{container element}, sedangkan elemen tanpa anak merupakan \textit{leaf node}. Struktur hierarki ini memungkinkan navigasi antar elemen, baik dari parent ke child maupun sebaliknya.
+
+Struktur DOM dapat dianalogikan sebagai berikut:
+\begin{itemize}
+    \item Dokumen merupakan akar (\textit{root})
+    \item Tag HTML seperti \texttt{<html>}, \texttt{<head>}, dan \texttt{<body>} merupakan cabang
+    \item Atribut dan teks merupakan daun
+\end{itemize}
+
+Beberapa karakteristik DOM antara lain:
+\begin{itemize}
+    \item Berbasis node: seluruh elemen direpresentasikan sebagai node
+    \item Bersifat hierarkis: memiliki hubungan parent-child
+    \item Dinamis: perubahan langsung tercermin pada halaman
+    \item Independen platform: dapat digunakan di berbagai sistem dan bahasa
+\end{itemize}
+
+\subsection{HTML Parsing}
+
+HTML parsing adalah proses mengubah dokumen HTML mentah menjadi struktur data pohon yang disebut DOM. Proses ini memungkinkan browser menampilkan halaman web serta memungkinkan manipulasi data secara terprogram.
+
+Parsing dimulai dari aliran karakter (\textit{stream}) yang kemudian melalui tahap tokenisasi dan konstruksi pohon. Tokenizer akan mengubah karakter menjadi token, kemudian tree builder menyusun token tersebut menjadi struktur DOM.
+
+Data yang diproses dapat berasal dari jaringan atau dari script, misalnya menggunakan \texttt{document.write()}. Parser memiliki mekanisme khusus seperti \textit{script nesting level} dan \textit{pause flag} untuk menangani proses parsing yang kompleks.
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.5\textwidth]{html2.png}
+    \caption{Proses HTML Parsing}
+\end{figure}
+
+
+\subsection{CSS Selector}
+
+CSS Selector adalah pola yang digunakan untuk memilih elemen HTML pada DOM agar dapat diberikan aturan tertentu. Selector menentukan elemen mana yang akan dikenai styling atau diproses lebih lanjut.
+
+\subsubsection{Basic Selector}
+
+\begin{longtable}{|c|l|c|p{7cm}|}
+\hline
+No & Nama & Simbol & Deskripsi \\
+\hline
+1 & Universal Selector & * & Memilih semua elemen HTML \\
+2 & Element Selector & - & Memilih elemen berdasarkan nama tag \\
+3 & Class Selector & . & Memilih elemen dengan atribut class tertentu \\
+4 & ID Selector & \# & Memilih elemen berdasarkan id unik \\
+\hline
+\end{longtable}
+
+\subsubsection{Combinator Selector}
+
+Combinator digunakan untuk menyatakan hubungan antar elemen dalam DOM.
+
+\begin{longtable}{|c|l|c|p{7cm}|}
+\hline
+No & Nama & Simbol & Deskripsi \\
+\hline
+1 & Descendant &  & Memilih elemen di dalam elemen lain \\
+2 & Child Selector & > & Memilih child langsung dari suatu elemen \\
+3 & Adjacent Sibling & + & Memilih elemen setelah elemen tertentu \\
+4 & General Sibling & \textasciitilde & Memilih semua sibling setelah elemen tertentu \\
+\hline
+\end{longtable}
+
+\subsubsection{Attribute Selector}
+
+Selector ini digunakan untuk memilih elemen berdasarkan atributnya.
+
+\begin{longtable}{|c|l|c|p{7cm}|}
+\hline
+No & Nama & Simbol & Deskripsi \\
+\hline
+1 & Presence Selector &  & Memilih elemen yang memiliki atribut tertentu \\
+2 & Attribute Value &  & Memilih elemen dengan nilai atribut tertentu \\
+3 & Substring Matching & \^= & Mencocokkan substring di awal \\
+4 & Wildcard & \*= & Mencocokkan substring di mana saja \\
+5 & Ends With & \$= & Mencocokkan akhiran atribut \\
+6 & Word Match & \textasciitilde= & Mencocokkan kata tertentu \\
+7 & Hyphen Match & |= & Mencocokkan prefix dengan tanda hubung \\
+\hline
+\end{longtable}
+
+\subsubsection{Pseudo-Class}
+
+Pseudo-class digunakan untuk merepresentasikan kondisi tertentu dari elemen.
+
+\begin{itemize}
+    \item :hover
+    \item :focus
+    \item :first-child
+    \item :last-child
+    \item :not
+\end{itemize}
+
+\subsubsection{Pseudo-Element}
+
+Pseudo-element digunakan untuk memanipulasi bagian tertentu dari elemen.
+
+\begin{itemize}
+    \item ::before
+    \item ::after
+    \item ::first-line
+    \item ::first-letter
+    \item ::placeholder
+\end{itemize}
+
+\subsection{Breadth First Search (BFS)}
+
+Breadth First Search (BFS) adalah algoritma traversal graf yang menelusuri node secara berlapis (level-by-level). Algoritma ini dimulai dari node sumber, kemudian mengunjungi semua node yang berjarak satu langkah, dilanjutkan ke node berikutnya hingga seluruh node yang dapat dijangkau telah dikunjungi.
+
+BFS umumnya menggunakan struktur data queue untuk mengatur urutan traversal.
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.5\textwidth]{bfs.jpg}
+    \caption{Ilustrasi Breadth First Search}
+\end{figure}
+
+
+\subsection{Depth First Search (DFS)}
+
+Depth First Search (DFS) adalah algoritma traversal graf yang menelusuri node secara mendalam. Algoritma ini akan mengunjungi satu cabang hingga mencapai node terdalam sebelum kembali dan menjelajahi cabang lainnya.
+
+DFS mirip dengan traversal preorder pada tree. Untuk menghindari pengulangan pada graf yang memiliki siklus, digunakan struktur data seperti array visited.
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.5\textwidth]{dfs.jpg}
+    \caption{Ilustrasi Depth First Search}
+\end{figure}
+
+Berikut adalah perbedaan utama antara BFS dan DFS:
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.5\textwidth]{bfs-vs-dfs.png}
+    \caption{Ilustrasi Perbedaan BFS dan DFS}
+\end{figure}
+
+\subsection{Binary Lifting}
+
+Binary Lifting merupakan teknik Dynamic Programming pada struktur tree untuk menemukan ancestor suatu node secara efisien. Teknik ini melakukan precomputation terhadap ancestor dari setiap node dalam bentuk tabel.
+
+Dengan metode ini, pencarian ancestor dapat dilakukan dalam kompleksitas waktu logaritmik, sehingga sangat efisien untuk menangani banyak query.
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.5\textwidth]{binary_lifting.png}
+    \caption{Ilustrasi Binary Lifting}
+\end{figure}
