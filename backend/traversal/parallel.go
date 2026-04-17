@@ -117,7 +117,7 @@ func ParallelDFS(root *model.DOMNode, chain model.SelectorChain, limit int) mode
 	model.RebuildParentPointers(root)
 	result.MaxDepth = model.MaxDepth(root)
 
-	// Proses root dulu agar konsisten dengan traversal DFS biasa.
+	// Proses root dulu 
 	step := 1
 	result.VisitedCount = 1
 	rootAction := "visit"
