@@ -12,6 +12,10 @@
 \usepackage{caption}
 \usepackage{subcaption}
 \usepackage{float}
+\usepackage{algorithm}
+\usepackage{algpseudocode}
+\usepackage{listings}
+\usepackage{multicol}
 \bibliographystyle{IEEEtran}
 % ---------- Paket lain ----------
 \usepackage[most]{tcolorbox}
@@ -30,7 +34,7 @@
 
 
 % Tambah jarak aman dari header dan footer:	
-\setlength{\headheight}{10pt}   % wajib cukup besar untuk fancyhdr
+\setlength{\headheight}{14.5pt}   % wajib cukup besar untuk fancyhdr
 \setlength{\headsep}{55pt}      % jarak header ke teks
 \setlength{\footskip}{28pt}     % jarak teks ke footer
 \usepackage[a4paper,top=3cm,bottom=3cm,left=3cm,right=3cm]{geometry}
@@ -51,9 +55,9 @@
 	}%
 	\fancyhead[R]{%
 		\begin{minipage}{9cm}
-			\raggedleft\bfseries IF2211 | Strategi Algoritma\\
+			\raggedleft\bfseries IF2211 Strategi Algoritma\\
 			\normalsize Laporan Akhir Tugas Besar 2\\
-			Semester 4 2025/2026
+			Semester II 2025/2026
 		\end{minipage}
 	}%
 	\renewcommand{\headrulewidth}{0.4pt}%
@@ -73,7 +77,7 @@
 	\begin{minipage}{9cm}
 		\raggedleft\bfseries IF2211 Strategi Algoritma\\
 		\normalsize Laporan Akhir Tugas Besar 2\\
-		\itshape Semester 4 2025/2026
+		\itshape Semester II 2025/2026
 	\end{minipage}
 }
 
@@ -93,32 +97,32 @@
 		% ---------- Judul utama ----------
 		{\LARGE \textbf{Tugas Besar 2}\par}
 		\vspace{0.2cm}
-		{\LARGE \textbf{Berry Manuka}\par}
+		{\LARGE \textbf{Berry-Manuka}\par}
 		\vspace{0.8cm}
-		{\large IF2211 | Strategi Algoritma\par}
+		{\large IF2211 Strategi Algoritma\par}
 		\vspace{0.2cm}
-		{\large Implementasi Algoritma BFS dan DFS untuk Penelusuran CSS Selector pada Struktur Document Object Model (DOM)\par}
-		\vspace{0.2cm}
-		{\large Semester 4 Tahun 2025/2026\par}
+		{\large Pemanfaatan Algoritma BFS dan DFS dalam Mekanisme Penelusuran CSS pada Pohon Document Object Model\par}
+		\vspace{0.1cm}
+		{\large Semester II Tahun 2025/2026\par}
 		
 		% ---------- Gambar tengah ----------
 		\vspace{1.8cm}
 		\includegraphics[width=0.9\textwidth]{foto-kelompok}\par
 		
 		% ---------- Disusun oleh ----------
-		\vspace{1.2cm}
+		\vspace{1.0cm}
 		{\bfseries Disusun oleh:\par}
 		\vspace{0.2cm}
-		\textbf{Berry Manuka}
+		\textbf{Berry-Manuka}
 		\vspace{0.5cm} \\
 		\begin{tabular}{l l}
-			Agatha Tatianingseto & (13524008) \\
-			Stefani Angeline Oroh & (13524064) \\
-			Athilla Zaidan Zidna Fann & (13524068) \\
+			Agatha Tatianingseto        & (13524008) \\
+			Stefani Angeline Oroh       & (13524064) \\
+			Athilla Zaidan Zidna Fann   & (13524068) \\
 		\end{tabular}
 		
 		% ---------- Institusi ----------
-		\vspace{1.6cm}
+		\vspace{1.5cm}
 		Laboratorium Ilmu dan Rekayasa Komputasi\par
 		Program Studi Teknik Informatika\par
 		Sekolah Teknik Elektro dan Informatika\par

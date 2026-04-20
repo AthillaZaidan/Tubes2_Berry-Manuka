@@ -1,104 +1,151 @@
+\section{Kisah}
+
+Setiap kali seseorang membuka sebuah halaman web di peramban (\textit{browser}),
+terjadi serangkaian proses yang kompleks di balik layar. Peramban mengunduh
+dokumen \textit{HyperText Markup Language} (HTML) dari peladen web, kemudian
+mengurai dokumen tersebut menjadi sebuah struktur pohon yang disebut
+\textit{Document Object Model} (DOM). Struktur pohon inilah yang menjadi
+fondasi bagi seluruh proses selanjutnya --- mulai dari penerapan gaya
+(\textit{styling}) melalui \textit{Cascading Style Sheets} (CSS), manipulasi
+konten secara dinamis melalui JavaScript, hingga proses \textit{rendering}
+visual di layar pengguna.
+
+Salah satu mekanisme fundamental dalam pemrosesan halaman web adalah
+\textbf{pencocokan CSS Selector}. Ketika seorang pengembang web menuliskan
+aturan CSS seperti \texttt{div > p.highlight}, peramban harus menelusuri
+seluruh pohon DOM untuk menemukan elemen-elemen yang memenuhi kriteria
+tersebut. Proses penelusuran ini pada dasarnya adalah sebuah \textit{tree
+traversal} --- mengunjungi node-node dalam pohon secara sistematis hingga
+seluruh elemen yang cocok ditemukan.
+
+Dua algoritma traversal yang paling fundamental adalah \textit{Breadth-First
+Search} (BFS) dan \textit{Depth-First Search} (DFS). Kedua algoritma ini
+memiliki strategi penelusuran yang berbeda: BFS menjelajahi pohon
+secara melebar (\textit{level-by-level}), sementara DFS menjelajahi pohon
+secara mendalam (\textit{sedalam mungkin baru mundur}). Pemilihan algoritma
+traversal yang tepat dapat memengaruhi efisiensi dan urutan penemuan elemen
+yang sesuai dengan CSS Selector yang diberikan.
+
+Pada Tugas Besar 2 mata kuliah IF2211 Strategi Algoritma ini, mahasiswa
+diminta untuk membangun sebuah aplikasi web yang mengimplementasikan proses
+penelusuran CSS Selector pada pohon DOM menggunakan algoritma BFS dan DFS.
+Program yang dikembangkan diberi nama \textbf{Berry-Manuka}: aplikasi web
+interaktif yang mampu mengambil dokumen HTML dari suatu URL, mem-parse-nya
+menjadi pohon DOM, menelusuri pohon tersebut menggunakan BFS maupun DFS untuk
+mencari elemen yang cocok dengan CSS Selector tertentu, serta memvisualisasikan
+seluruh proses penelusuran secara interaktif.
+
+\section{Latar Belakang}
+
+\textit{Document Object Model} (DOM) adalah antarmuka pemrograman yang
+merepresentasikan struktur dokumen HTML dalam bentuk pohon hierarkis.
+Setiap elemen HTML dalam dokumen direpresentasikan sebagai sebuah \textit{node}
+dalam pohon, dengan hubungan \textit{parent-child-sibling} yang mencerminkan
+struktur bersarang (\textit{nesting}) dari tag-tag HTML \cite{mdn_dom}.
+Representasi pohon ini bersifat universal dan menjadi dasar bagi hampir semua
+operasi yang dilakukan peramban terhadap halaman web.
+
+Pencocokan CSS Selector merupakan operasi yang sangat sering dilakukan oleh
+peramban. Setiap kali sebuah halaman web dimuat, peramban harus mencocokkan
+setiap aturan CSS dalam \textit{stylesheet} dengan elemen-elemen yang sesuai
+di pohon DOM. Proses ini memerlukan penelusuran pohon DOM secara efisien,
+mengingat kompleksitas halaman web modern yang dapat memiliki ribuan hingga
+puluhan ribu node \cite{mdn_css_selectors}.
+
+Algoritma \textit{Breadth-First Search} (BFS) dan \textit{Depth-First Search}
+(DFS) merupakan dua strategi penelusuran graf dan pohon yang paling dasar dan
+penting dalam ilmu komputer \cite{cormen2009introduction}. Kedua algoritma ini
+memiliki karakteristik yang berbeda dalam hal urutan kunjungan node, penggunaan
+memori, dan kesesuaian dengan jenis pencarian tertentu. Pemahaman mendalam
+mengenai perbedaan keduanya sangat penting dalam konteks penelusuran pohon DOM.
+
+Visualisasi interaktif dari proses penelusuran pohon DOM dapat membantu
+pengguna memahami cara kerja algoritma BFS dan DFS secara lebih intuitif.
+Daripada hanya membaca pseudocode atau analisis teoritis, pengguna dapat
+mengamati secara langsung bagaimana setiap algoritma mengunjungi node-node
+dalam pohon, mengetahui node mana yang diperiksa terlebih dahulu, dan melihat
+jalur yang ditempuh hingga elemen yang dicari ditemukan.
+
+Untuk meningkatkan performa penelusuran pada pohon DOM yang berukuran besar,
+diterapkan mekanisme konkurensi menggunakan \textit{goroutine} yang disediakan
+oleh bahasa pemrograman Go. Dengan pemrosesan paralel, beberapa node dapat
+diperiksa secara bersamaan sehingga waktu penelusuran dapat dikurangi secara
+signifikan.
+
+Selain itu, diimplementasikan pula algoritma \textit{Lowest Common Ancestor}
+(LCA) dengan metode \textit{Binary Lifting} untuk menentukan ancestor bersama
+terdekat dari dua buah node dalam pohon DOM. Algoritma ini memiliki
+kompleksitas query sebesar $O(\log N)$, jauh lebih efisien dibandingkan
+pendekatan naif yang memiliki kompleksitas $O(N)$ per query
+\cite{cpalgorithms_lca}.
+
 \section{Deskripsi Tugas}
 
-\begin{figure}[H]
-    \centering
-    \includegraphics[width=0.75\textwidth]{DOM.png}
-    \caption{Struktur Pohon DOM}
-\end{figure}
+Program Berry-Manuka merupakan aplikasi web yang menerima masukan berupa
+dokumen HTML --- baik melalui \textit{URL scraping} maupun input manual ---
+kemudian mem-parse dokumen tersebut menjadi pohon DOM dan menyediakan
+fasilitas penelusuran pohon menggunakan algoritma BFS atau DFS berdasarkan
+CSS Selector yang diberikan pengguna. Hasil penelusuran divisualisasikan
+secara interaktif lengkap dengan animasi proses penelusuran, statistik
+performa, dan traversal log.
 
-\href{https://www.geeksforgeeks.org/java/what-is-document-object-in-java-dom/}{https://www.geeksforgeeks.org/java/what-is-document-object-in-java-dom/}
+Program dikembangkan menggunakan bahasa pemrograman Go untuk \textit{backend}
+dan framework Next.js untuk \textit{frontend}, serta dikemas dalam
+kontainer Docker untuk memudahkan proses deployment. Program ini dikerjakan
+secara berkelompok oleh tiga orang mahasiswa.
 
-Document Object Model (DOM) merupakan representasi terstruktur dari dokumen HTML dalam bentuk \textit{tree} yang memungkinkan setiap elemen pada halaman web diakses, dimodifikasi, dan dimanipulasi oleh program. Struktur ini merepresentasikan hubungan antar elemen HTML seperti parent, child, dan sibling sehingga memudahkan pengolahan dokumen secara terprogram.
+\subsection{Masukan}
 
-Struktur sebuah file HTML pada umumnya meliputi elemen root \texttt{<html>} yang berisi dua bagian utama yaitu \texttt{<head>} dan \texttt{<body>}. Bagian \texttt{<head>} berisi metadata seperti judul halaman, link stylesheet, dan script, sedangkan \texttt{<body>} berisi konten utama halaman seperti teks, gambar, tombol, dan elemen HTML lainnya yang ditampilkan kepada pengguna.
-
-Sebuah website menampilkan sebuah DOM melalui sebuah file bernama Cascading Style Sheets (CSS) yang bertujuan mendeklarasikan visualisasi elemen-elemen pada pohon. Deklarasi visualisasi ditempelkan pada elemen-elemen yang berkaitan melalui CSS Selector.
-
-Pada Tugas Besar 2 Strategi Algoritma ini, mahasiswa diminta untuk menelusuri dan mencari elemen pada struktur DOM berdasarkan CSS Selector tertentu dengan menggunakan algoritma penelusuran graf yaitu Breadth First Search (BFS) dan Depth First Search (DFS). Algoritma tersebut digunakan untuk menjelajahi struktur pohon DOM guna menemukan elemen yang sesuai dengan selector yang diberikan.
-
-Komponen-komponen penting yang terdapat pada tugas besar ini antara lain:
-
-\begin{enumerate}
-    \item \textbf{Tags}
-\end{enumerate}
-
-\begin{figure}[H]
-    \centering
-    \includegraphics[width=0.6\textwidth]{html.png}
-    \caption{Struktur Syntax HTML}
-\end{figure}
-
-\href{https://tutorial.techaltum.com/htmlTags.html}{https://tutorial.techaltum.com/htmlTags.html}
-
-Tag pada HTML merupakan penanda (markup) yang digunakan untuk mendefinisikan struktur dan jenis elemen dalam sebuah dokumen HTML. Tag memberi tahu browser bagaimana suatu bagian konten harus ditafsirkan dan ditampilkan pada halaman web.
-
-Secara umum, tag HTML ditulis menggunakan tanda kurung sudut (\texttt{< >}). Sebagian besar elemen HTML memiliki pasangan tag pembuka dan tag penutup. Tag pembuka menandai awal suatu elemen, sedangkan tag penutup menandai akhir elemen tersebut. Tag penutup ditulis dengan menambahkan tanda garis miring / sebelum nama tag. Terdapat beberapa jenis tag HTML yang \textit{self-closing}.
-
-Dalam struktur DOM, setiap tag HTML direpresentasikan sebagai node pada pohon DOM. Hubungan antar tag membentuk struktur hierarki seperti parent, child, dan sibling.
-
-Struktur inilah yang memungkinkan dokumen HTML diproses sebagai sebuah pohon ketika dilakukan penelusuran menggunakan algoritma seperti BFS atau DFS.
+Program menerima beberapa parameter masukan melalui antarmuka web:
 
 \begin{enumerate}
-    \setcounter{enumi}{1}
-    \item \textbf{CSS Selector}
+    \item \textbf{Sumber dokumen HTML}: dapat berupa URL website yang akan
+    di-\textit{scrape} atau teks HTML yang dimasukkan secara manual oleh
+    pengguna.
+
+    \item \textbf{Pilihan algoritma traversal}: pilihan antara
+    \textit{Breadth-First Search} (BFS) atau \textit{Depth-First Search}
+    (DFS) sebagai metode penelusuran pohon DOM.
+
+    \item \textbf{CSS Selector}: selector yang digunakan untuk mencari elemen
+    yang sesuai dalam pohon DOM. Selector yang didukung meliputi
+    \textit{tag selector} (misalnya \texttt{p}), \textit{class selector}
+    (misalnya \texttt{.highlight}), \textit{ID selector} (misalnya
+    \texttt{\#header}), dan \textit{universal selector} (\texttt{*}), serta
+    \textit{combinator} berupa child (\texttt{>}), descendant (spasi),
+    adjacent sibling (\texttt{+}), dan general sibling (\texttt{\textasciitilde}).
+
+    \item \textbf{Jumlah hasil}: banyaknya kemunculan elemen yang ingin
+    ditampilkan, baik berupa $N$ hasil pertama (\textit{top-N}) maupun
+    seluruh kemunculan.
 \end{enumerate}
 
-\begin{figure}[H]
-    \centering
-    \includegraphics[width=0.5\textwidth]{css.png}
-    \caption{Visualisasi CSS Selector}
-\end{figure}
+\subsection{Keluaran}
 
-\href{https://www.reddit.com/r/webdev/comments/ur6v5m/css_selectors_visually_explained/}{https://www.reddit.com/r/webdev/comments/ur6v5m/css_selectors_visually_explained/}
-
-CSS Selector adalah mekanisme pada CSS untuk memilih elemen HTML tertentu pada struktur DOM agar dapat diberikan aturan style. Dengan selector, kita dapat menentukan elemen mana yang akan dikenai aturan visual seperti warna, ukuran, atau tata letak. Beberapa selector dasar yang umum digunakan adalah sebagai berikut.
-
-\begin{itemize}
-    \item \textbf{Tag Selector}
-
-    Memilih elemen berdasarkan nama tag HTML. Contoh: p memilih semua elemen \texttt{<p>}.
-
-    \item \textbf{Class Selector}
-
-    Memilih elemen yang memiliki atribut class tertentu, ditulis dengan tanda titik (.).Contoh: .box
-
-    \item \textbf{ID Selector}
-
-    Memilih elemen dengan atribut id tertentu, ditulis dengan tanda pagar (\#).
-
-    Contoh: \#header
-
-    \item \textbf{Universal Selector}
-
-    Memilih semua elemen HTML.
-
-    Contoh: *
-\end{itemize}
-
-Combinator merupakan cara untuk menggabungkan beberapa jenis selector dalam penentuan elemen yang akan terpengaruh, dan terdiri dari:
-
-\begin{itemize}
-    \item Child Combinator (>)
-    \item Descendent Combinator (“ “)
-    \item Adjacent Sibling Combinator (+)
-    \item General Sibling Combinator (\textasciitilde)
-\end{itemize}
+Program menghasilkan beberapa bentuk keluaran melalui antarmuka web:
 
 \begin{enumerate}
-    \setcounter{enumi}{2}
-    \item \textbf{HTML Parsing}
+    \item \textbf{Visualisasi pohon DOM}: representasi visual dari struktur
+    pohon DOM hasil \textit{parsing}, lengkap dengan keterangan kedalaman
+    maksimum (\textit{maximum depth}) dari pohon tersebut.
+
+    \item \textbf{Highlight jalur traversal}: penandaan visual pada
+    node-node yang dikunjungi selama proses penelusuran, sehingga pengguna
+    dapat mengamati urutan dan jalur yang ditempuh oleh algoritma.
+
+    \item \textbf{Animasi penelusuran}: animasi langkah demi langkah dari
+    proses penelusuran pohon DOM yang menunjukkan node mana yang sedang
+    diperiksa pada setiap tahapan.
+
+    \item \textbf{Statistik performa}: informasi mengenai waktu pencarian
+    (dalam milidetik) dan banyaknya node yang dikunjungi selama proses
+    penelusuran.
+
+    \item \textbf{Traversal log}: catatan berurutan yang memuat informasi
+    setiap tahapan penelusuran, termasuk node yang dikunjungi dan status
+    pencocokan terhadap CSS Selector.
+
+    \item \textbf{Lowest Common Ancestor}: hasil pencarian ancestor bersama
+    terdekat dari dua buah node yang dipilih oleh pengguna dalam pohon DOM,
+    beserta jalur dari masing-masing node menuju ancestor tersebut.
 \end{enumerate}
-
-\begin{figure}[H]
-    \centering
-    \includegraphics[width=0.8\textwidth]{parse.png}
-    \caption{Proses Parsing Pohon HTML}
-\end{figure}
-
-\href{https://stackoverflow.com/questions/3150293/how-does-a-parser-for-example-html-work}{https://stackoverflow.com/questions/3150293/how-does-a-parser-for-example-html-work}
-
-HTML Parsing adalah proses membaca dokumen HTML dan mengubahnya menjadi struktur data pohon (tree) yang merepresentasikan hubungan antar elemen HTML. Pada proses ini, parser memproses dokumen HTML secara berurutan, mengenali tag pembuka dan tag penutup, kemudian menyusunnya ke dalam struktur hierarki.
-
-Setiap tag HTML direpresentasikan sebagai node pada pohon. Tag yang berada di dalam tag lain akan menjadi child node, sedangkan tag yang membungkusnya menjadi parent node. Node paling atas pada struktur ini disebut root, yang umumnya merupakan elemen \texttt{<html>}. Dari node root tersebut, elemen-elemen lain seperti \texttt{<head>} dan \texttt{<body>} akan menjadi cabang yang membentuk struktur pohon DOM.
-
-Hasil dari proses parsing adalah DOM Tree, yaitu representasi pohon dari dokumen HTML yang memungkinkan elemen-elemen pada halaman web ditelusuri, diakses, dan dimanipulasi secara terstruktur. Struktur pohon ini kemudian dapat digunakan dalam proses penelusuran elemen, misalnya dengan menggunakan algoritma Breadth First Search (BFS) atau Depth First Search (DFS).

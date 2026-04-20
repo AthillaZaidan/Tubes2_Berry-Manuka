@@ -1,157 +1,675 @@
-\section{Dasar Teori}
+Bagian ini membahas konsep-konsep teoritis yang menjadi landasan pengembangan
+program Berry-Manuka. Pemahaman terhadap konsep-konsep berikut diperlukan untuk
+memahami cara kerja aplikasi penelusuran pohon DOM menggunakan algoritma
+\textit{Breadth-First Search} (BFS) dan \textit{Depth-First Search} (DFS) yang
+diimplementasikan.
 
-\subsection{Document Object Model (DOM)}
+\section{Document Object Model (DOM)}
 
-Document Object Model (DOM) merupakan representasi terstruktur dari sebuah halaman web yang memungkinkan pengembang untuk mengakses, memodifikasi, dan mengontrol isi serta struktur halaman menggunakan program, seperti JavaScript. DOM menjadi dasar dari berbagai interaksi dinamis pada website, seperti pembaruan konten secara real-time, validasi form, dan antarmuka interaktif.
+\textit{Document Object Model} (DOM) adalah antarmuka pemrograman yang
+merepresentasikan struktur dokumen HTML dalam bentuk pohon hierarkis
+\cite{mdn_dom}. DOM menyediakan representasi terstruktur dari dokumen, memungkinkan
+manipulasi konten, struktur, dan gaya dokumen melalui bahasa pemrograman seperti
+JavaScript.
 
-DOM berbentuk struktur pohon (\textit{tree}), di mana setiap tag HTML direpresentasikan sebagai node. Elemen \texttt{<html>} berada pada posisi paling atas sebagai root, yang memiliki child berupa \texttt{<head>} dan \texttt{<body>}. Elemen-elemen tersebut kemudian memiliki child lain seperti \texttt{<title>}, \texttt{<div>}, \texttt{<h1>}, \texttt{<p>}, dan sebagainya.
+Dalam representasi pohon DOM, setiap elemen HTML dalam dokumen direpresentasikan
+sebagai sebuah \textit{node} dalam pohon. Terdapat beberapa tipe node yang
+penting:
 
-Elemen yang memiliki anak disebut sebagai \textit{container element}, sedangkan elemen tanpa anak merupakan \textit{leaf node}. Struktur hierarki ini memungkinkan navigasi antar elemen, baik dari parent ke child maupun sebaliknya.
-
-Struktur DOM dapat dianalogikan sebagai berikut:
 \begin{itemize}
-    \item Dokumen merupakan akar (\textit{root})
-    \item Tag HTML seperti \texttt{<html>}, \texttt{<head>}, dan \texttt{<body>} merupakan cabang
-    \item Atribut dan teks merupakan daun
+    \item \textbf{Element node}: merepresentasikan tag HTML seperti \texttt{<div>},
+    \texttt{<p>}, atau \texttt{<h1>}. Setiap element node dapat memiliki atribut
+    dan children.
+    
+    \item \textbf{Text node}: merepresentasikan teks yang terdapat di dalam elemen
+    HTML. Text node selalu menjadi \textit{leaf node} dalam pohon DOM.
+    
+    \item \textbf{Attribute node}: merepresentasikan atribut dari sebuah elemen
+    HTML seperti \texttt{class}, \texttt{id}, atau \texttt{href}.
 \end{itemize}
 
-Beberapa karakteristik DOM antara lain:
+Struktur pohon DOM memiliki hubungan hierarkis yang mencerminkan struktur
+bersarang dari tag-tag HTML:
+
 \begin{itemize}
-    \item Berbasis node: seluruh elemen direpresentasikan sebagai node
-    \item Bersifat hierarkis: memiliki hubungan parent-child
-    \item Dinamis: perubahan langsung tercermin pada halaman
-    \item Independen platform: dapat digunakan di berbagai sistem dan bahasa
+    \item \textbf{Root node}: \textit{node} paling atas dalam hierarki, biasanya
+    elemen \texttt{<html>}, yang merepresentasikan keseluruhan dokumen.
+    
+    \item \textbf{Parent-child relationship}: setiap node (kecuali root) memiliki
+    tepat satu \textit{parent node}, dan setiap node dapat memiliki nol atau
+    lebih \textit{child nodes}. Jika node A secara langsung mengandung node B di
+    dalamnya, maka A adalah parent dari B dan B adalah child dari A.
+    
+    \item \textbf{Sibling relationship}: node-node yang memiliki parent yang sama
+    disebut \textit{siblings}. Siblings memiliki \textit{previous sibling} dan
+    \textit{next sibling} yang menunjukkan urutan kemunculan mereka dalam dokumen.
+\end{itemize}
+
+Setiap node dalam pohon DOM memiliki kedalaman (\textit{depth}) yang menunjukkan
+jarak dari root node. Root node berada pada kedalaman 0, children langsungnya
+pada kedalaman 1, dan seterusnya. Kedalaman maksimum (\textit{maximum depth})
+dari pohon menunjukkan tinggi pohon tersebut.
+
+Representasi pohon DOM bersifat universal dan menjadi dasar bagi hampir semua
+operasi yang dilakukan peramban terhadap halaman web, termasuk penerapan gaya
+CSS, manipulasi konten dinamis, dan pemrosesan event \cite{flanagan2006javascript}.
+
+\section{HTML dan HTML Parsing}
+
+\textit{HyperText Markup Language} (HTML) adalah bahasa markup standar yang
+digunakan untuk membuat dan menyusun struktur halaman web \cite{mdn_html}.
+HTML menggunakan sistem \textit{tag} untuk menandai berbagai elemen dalam
+dokumen seperti teks, gambar, tautan, dan elemen lainnya.
+
+\subsection{Struktur Dasar HTML}
+
+Tag HTML ditulis dengan menggunakan kurung siku sudut (\texttt{< >}). Sebagian
+besar tag memiliki tag pembuka (misalnya \texttt{<p>}) dan tag penutup
+(misalnya \texttt{</p>}) yang mengapit konten di dalamnya. Terdapat juga tag
+yang bersifat \textit{self-closing} atau \textit{void elements} yang tidak
+memerlukan tag penutup, seperti \texttt{<br/>}, \texttt{<img/>}, \texttt{<input/>},
+\texttt{<hr/>}, \texttt{<meta/>}, dan \texttt{<link/>}.
+
+Setiap elemen HTML dapat memiliki atribut yang memberikan informasi tambahan
+atau mengubah perilaku elemen tersebut. Atribut ditulis di dalam tag pembuka
+dengan format \texttt{nama="nilai"}. Atribut umum yang sering digunakan antara
+lain:
+
+\begin{itemize}
+    \item \texttt{class}: menentukan satu atau lebih kelas CSS untuk elemen
+    \item \texttt{id}: memberikan identifier unik untuk elemen dalam dokumen
+    \item \texttt{href}: menentukan URL tujuan untuk elemen tautan (\texttt{<a>})
+    \item \texttt{src}: menentukan sumber file untuk elemen media (\texttt{<img>},
+    \texttt{<script>})
 \end{itemize}
 
 \subsection{HTML Parsing}
 
-HTML parsing adalah proses mengubah dokumen HTML mentah menjadi struktur data pohon yang disebut DOM. Proses ini memungkinkan browser menampilkan halaman web serta memungkinkan manipulasi data secara terprogram.
+\textit{HTML Parsing} adalah proses membaca dokumen HTML dan mengubahnya menjadi
+struktur pohon DOM \cite{whatwg_html}. Parser memproses dokumen secara berurutan
+dari awal hingga akhir, mengenali tag-tag HTML dan menyusun hierarki node-node
+DOM.
 
-Parsing dimulai dari aliran karakter (\textit{stream}) yang kemudian melalui tahap tokenisasi dan konstruksi pohon. Tokenizer akan mengubah karakter menjadi token, kemudian tree builder menyusun token tersebut menjadi struktur DOM.
+Proses parsing HTML melibatkan beberapa langkah utama:
 
-Data yang diproses dapat berasal dari jaringan atau dari script, misalnya menggunakan \texttt{document.write()}. Parser memiliki mekanisme khusus seperti \textit{script nesting level} dan \textit{pause flag} untuk menangani proses parsing yang kompleks.
+\begin{enumerate}
+    \item \textbf{Tokenization}: membaca karakter demi karakter dari dokumen
+    HTML dan mengubahnya menjadi \textit{token} seperti \textit{start tag},
+    \textit{end tag}, \textit{attribute}, dan \textit{text}.
+    
+    \item \textbf{Tree Construction}: membangun pohon DOM berdasarkan token-token
+    yang dihasilkan. Proses ini menggunakan \textit{stack} untuk melacak node-node
+    yang sedang aktif:
+    \begin{itemize}
+        \item Saat menemukan \textit{StartTagToken}, sebuah node baru dibuat,
+        ditambahkan sebagai child dari node di atas stack, kemudian node baru
+        tersebut di-\textit{push} ke stack.
+        \item Saat menemukan \textit{EndTagToken}, stack di-\textit{pop} untuk
+        kembali ke parent node.
+        \item Saat menemukan \textit{SelfClosingTagToken}, node dibuat dan
+        ditambahkan sebagai child, tetapi tidak di-\textit{push} ke stack.
+        \item \textit{TextToken} ditambahkan sebagai \textit{innerText} dari
+        node yang sedang berada di atas stack.
+    \end{itemize}
+\end{enumerate}
 
-\begin{figure}[H]
-    \centering
-    \includegraphics[width=0.5\textwidth]{html2.png}
-    \caption{Proses HTML Parsing}
-\end{figure}
+Dalam implementasi program Berry-Manuka, parsing HTML dilakukan menggunakan
+pustaka \texttt{golang.org/x/net/html} yang menyediakan \textit{tokenizer} HTML
+standar untuk bahasa pemrograman Go. Pustaka ini mampu menangani berbagai kasus
+edge seperti tag yang tidak tertutup dengan benar, tag yang bersarang secara
+tidak valid, dan karakter khusus dalam dokumen HTML.
 
+\section{CSS Selector}
 
-\subsection{CSS Selector}
+\textit{Cascading Style Sheets} (CSS) Selector adalah pola yang digunakan untuk
+memilih elemen-elemen tertentu dalam pohon DOM agar dapat diberi aturan gaya
+\cite{mdn_css_selectors}. Selector memungkinkan pengembang web untuk menargetkan
+satu atau lebih elemen berdasarkan tipe tag, atribut class, atribut id, atau
+hubungan struktural dengan elemen lain.
 
-CSS Selector adalah pola yang digunakan untuk memilih elemen HTML pada DOM agar dapat diberikan aturan tertentu. Selector menentukan elemen mana yang akan dikenai styling atau diproses lebih lanjut.
+\subsection{Selector Dasar}
 
-\subsubsection{Basic Selector}
-
-\begin{longtable}{|c|l|c|p{7cm}|}
-\hline
-No & Nama & Simbol & Deskripsi \\
-\hline
-1 & Universal Selector & * & Memilih semua elemen HTML \\
-2 & Element Selector & - & Memilih elemen berdasarkan nama tag \\
-3 & Class Selector & . & Memilih elemen dengan atribut class tertentu \\
-4 & ID Selector & \# & Memilih elemen berdasarkan id unik \\
-\hline
-\end{longtable}
-
-\subsubsection{Combinator Selector}
-
-Combinator digunakan untuk menyatakan hubungan antar elemen dalam DOM.
-
-\begin{longtable}{|c|l|c|p{7cm}|}
-\hline
-No & Nama & Simbol & Deskripsi \\
-\hline
-1 & Descendant &  & Memilih elemen di dalam elemen lain \\
-2 & Child Selector & > & Memilih child langsung dari suatu elemen \\
-3 & Adjacent Sibling & + & Memilih elemen setelah elemen tertentu \\
-4 & General Sibling & \textasciitilde & Memilih semua sibling setelah elemen tertentu \\
-\hline
-\end{longtable}
-
-\subsubsection{Attribute Selector}
-
-Selector ini digunakan untuk memilih elemen berdasarkan atributnya.
-
-\begin{longtable}{|c|l|c|p{7cm}|}
-\hline
-No & Nama & Simbol & Deskripsi \\
-\hline
-1 & Presence Selector &  & Memilih elemen yang memiliki atribut tertentu \\
-2 & Attribute Value &  & Memilih elemen dengan nilai atribut tertentu \\
-3 & Substring Matching & \^= & Mencocokkan substring di awal \\
-4 & Wildcard & \*= & Mencocokkan substring di mana saja \\
-5 & Ends With & \$= & Mencocokkan akhiran atribut \\
-6 & Word Match & \textasciitilde= & Mencocokkan kata tertentu \\
-7 & Hyphen Match & |= & Mencocokkan prefix dengan tanda hubung \\
-\hline
-\end{longtable}
-
-\subsubsection{Pseudo-Class}
-
-Pseudo-class digunakan untuk merepresentasikan kondisi tertentu dari elemen.
+Program Berry-Manuka mendukung empat tipe selector dasar:
 
 \begin{itemize}
-    \item :hover
-    \item :focus
-    \item :first-child
-    \item :last-child
-    \item :not
+    \item \textbf{Tag Selector}: memilih semua elemen dengan nama tag tertentu.
+    Sintaks: \texttt{tagname}. Contoh: \texttt{p} memilih semua elemen \texttt{<p>}.
+    
+    \item \textbf{Class Selector}: memilih elemen yang memiliki atribut \texttt{class}
+    dengan nilai tertentu. Sintaks: \texttt{.classname}. Contoh: \texttt{.box}
+    memilih elemen dengan \texttt{class="box"}.
+    
+    \item \textbf{ID Selector}: memilih elemen yang memiliki atribut \texttt{id}
+    dengan nilai tertentu. ID bersifat unik dalam satu dokumen. Sintaks:
+    \texttt{\#idname}. Contoh: \texttt{\#header} memilih elemen dengan
+    \texttt{id="header"}.
+    
+    \item \textbf{Universal Selector}: memilih semua elemen dalam dokumen.
+    Sintaks: \texttt{*}.
 \end{itemize}
 
-\subsubsection{Pseudo-Element}
+\subsection{Combinator}
 
-Pseudo-element digunakan untuk memanipulasi bagian tertentu dari elemen.
+\textit{Combinator} adalah karakter khusus yang digunakan untuk mengekspresikan
+hubungan antara dua selector, memungkinkan pemilihan elemen berdasarkan posisi
+relatif mereka dalam pohon DOM. Terdapat empat tipe combinator:
 
 \begin{itemize}
-    \item ::before
-    \item ::after
-    \item ::first-line
-    \item ::first-letter
-    \item ::placeholder
+    \item \textbf{Child Combinator} (\texttt{>}): memilih elemen yang merupakan
+    \textit{direct child} dari elemen induk tertentu. Contoh: \texttt{div > p}
+    memilih elemen \texttt{<p>} yang secara langsung berada di dalam \texttt{<div>}.
+    
+    \item \textbf{Descendant Combinator} (spasi): memilih elemen yang merupakan
+    keturunan (bukan harus direct child) dari elemen tertentu. Contoh:
+    \texttt{div p} memilih semua \texttt{<p>} yang berada di dalam \texttt{<div>}
+    pada level kedalaman berapa pun.
+    
+    \item \textbf{Adjacent Sibling Combinator} (\texttt{+}): memilih elemen
+    yang merupakan sibling langsung (tepat setelah) elemen tertentu. Contoh:
+    \texttt{div + p} memilih \texttt{<p>} yang tepat berada setelah \texttt{<div>}.
+    
+    \item \textbf{General Sibling Combinator} (\texttt{\textasciitilde}): memilih
+    elemen yang merupakan sibling yang berada setelah elemen tertentu (tidak harus
+    langsung). Contoh: \texttt{div \textasciitilde p} memilih semua \texttt{<p>}
+    yang berada setelah \texttt{<div>} dalam parent yang sama.
 \end{itemize}
 
-\subsection{Breadth First Search (BFS)}
+\subsection{Selector Chain dan Matching}
 
-Breadth First Search (BFS) adalah algoritma traversal graf yang menelusuri node secara berlapis (level-by-level). Algoritma ini dimulai dari node sumber, kemudian mengunjungi semua node yang berjarak satu langkah, dilanjutkan ke node berikutnya hingga seluruh node yang dapat dijangkau telah dikunjungi.
+Selector yang kompleks dapat dibentuk dengan menggabungkan beberapa selector
+dan combinator dalam sebuah \textit{chain}. Contoh: \texttt{div > .box p}
+berarti memilih elemen \texttt{<p>} yang merupakan descendant dari elemen dengan
+class \texttt{box}, yang merupakan direct child dari \texttt{<div>}.
 
-BFS umumnya menggunakan struktur data queue untuk mengatur urutan traversal.
+Proses \textit{matching} selector dilakukan dengan memeriksa apakah sebuah node
+DOM memenuhi pola selector yang diberikan. Untuk selector chain, matching
+dilakukan dari kanan ke kiri, memeriksa hubungan struktural antar elemen sesuai
+dengan combinator yang digunakan. Setiap combinator memerlukan pengecekan
+hubungan yang berbeda: child combinator memeriksa parent langsung, descendant
+combinator menelusuri semua ancestor, dan sibling combinators memeriksa hubungan
+sibling dalam parent yang sama.
 
-\begin{figure}[H]
-    \centering
-    \includegraphics[width=0.5\textwidth]{bfs.jpg}
-    \caption{Ilustrasi Breadth First Search}
-\end{figure}
+\section{Breadth-First Search (BFS)}
 
+\textit{Breadth-First Search} (BFS) adalah algoritma traversal graf dan pohon
+yang menelusuri node-node secara \textit{level-by-level}, mengunjungi semua node
+pada kedalaman tertentu sebelum berpindah ke kedalaman berikutnya
+\cite{cormen2009introduction}. Dalam konteks pohon DOM, BFS mengunjungi root
+terlebih dahulu, kemudian semua children dari root, kemudian grandchildren, dan
+seterusnya.
 
-\subsection{Depth First Search (DFS)}
+\subsection{Karakteristik BFS}
 
-Depth First Search (DFS) adalah algoritma traversal graf yang menelusuri node secara mendalam. Algoritma ini akan mengunjungi satu cabang hingga mencapai node terdalam sebelum kembali dan menjelajahi cabang lainnya.
+BFS menggunakan struktur data \textit{queue} (FIFO --- First In First Out) untuk
+mengelola urutan kunjungan node. Root node dimasukkan ke dalam queue terlebih
+dahulu. Selama queue tidak kosong, node di depan queue dikeluarkan untuk
+diproses, kemudian semua children dari node tersebut dimasukkan ke dalam queue.
+Proses ini berulang hingga seluruh node dikunjungi atau target ditemukan.
 
-DFS mirip dengan traversal preorder pada tree. Untuk menghindari pengulangan pada graf yang memiliki siklus, digunakan struktur data seperti array visited.
+\subsection{Pseudocode BFS}
 
-\begin{figure}[H]
-    \centering
-    \includegraphics[width=0.5\textwidth]{dfs.jpg}
-    \caption{Ilustrasi Depth First Search}
-\end{figure}
+Algoritma BFS untuk traversal pohon DOM dengan pencarian berdasarkan CSS selector
+dapat dilihat pada Algoritma \ref{alg:bfs}.
 
-Berikut adalah perbedaan utama antara BFS dan DFS:
-\begin{figure}[H]
-    \centering
-    \includegraphics[width=0.5\textwidth]{bfs-vs-dfs.png}
-    \caption{Ilustrasi Perbedaan BFS dan DFS}
-\end{figure}
+\begin{algorithm}
+\caption{BFS untuk Penelusuran Pohon DOM}
+\label{alg:bfs}
+\begin{algorithmic}[1]
+\Function{BFS}{$root, selectorChain, limit$}
+    \State $queue \gets$ Queue dengan elemen $root$
+    \State $visited \gets 0$
+    \State $results \gets$ list kosong
+    \State $log \gets$ list kosong
+    \State $start \gets$ waktu sekarang
+    
+    \While{$queue$ tidak kosong}
+        \State $node \gets queue.$\Call{Dequeue}{}
+        \State $visited \gets visited + 1$
+        
+        \If{\Call{MatchChain}{$node, selectorChain$}}
+            \State \Call{Append}{$log, (visited, node, \text{"match"})$}
+            \State \Call{Append}{$results, node$}
+            \If{$limit > 0$ dan $|results| \geq limit$}
+                \State \textbf{break}
+            \EndIf
+        \Else
+            \State \Call{Append}{$log, (visited, node, \text{"visit"})$}
+        \EndIf
+        
+        \For{setiap $child$ dalam $node.Children$}
+            \State $queue.$\Call{Enqueue}{$child$}
+        \EndFor
+    \EndWhile
+    
+    \State $elapsed \gets$ waktu sejak $start$
+    \State \Return \{$results, log, visited, elapsed, \text{"bfs"}$\}
+\EndFunction
+\end{algorithmic}
+\end{algorithm}
+
+\subsection{Analisis Kompleksitas}
+
+Kompleksitas waktu BFS adalah $O(N)$, di mana $N$ adalah jumlah total node dalam
+pohon, karena setiap node dikunjungi tepat satu kali. Kompleksitas ruang adalah
+$O(W)$, di mana $W$ adalah lebar maksimum pohon (jumlah maksimum node pada satu
+level), karena pada saat tertentu queue harus menyimpan semua node pada level
+yang sedang diproses.
+
+BFS memiliki karakteristik menemukan elemen pada level atas pohon terlebih dahulu.
+Ini menguntungkan ketika elemen target kemungkinan besar berada di level yang
+dangkal. Namun, BFS cenderung boros memori pada pohon yang lebar karena harus
+menyimpan banyak node dalam queue secara bersamaan.
+
+\section{Depth-First Search (DFS)}
+
+\textit{Depth-First Search} (DFS) adalah algoritma traversal graf dan pohon yang
+menelusuri node-node secara mendalam, mengunjungi sejauh mungkin sepanjang setiap
+cabang sebelum melakukan \textit{backtrack} \cite{cormen2009introduction}. Dalam
+konteks pohon DOM, DFS menelusuri satu subtree secara lengkap sebelum berpindah
+ke subtree berikutnya.
+
+\subsection{Karakteristik DFS}
+
+DFS dapat diimplementasikan secara iteratif menggunakan \textit{stack} (LIFO ---
+Last In First Out) atau secara rekursif. Dalam implementasi iteratif, root node
+dimasukkan ke dalam stack terlebih dahulu. Selama stack tidak kosong, node di
+atas stack dikeluarkan untuk diproses, kemudian children dari node tersebut
+dimasukkan ke dalam stack dalam urutan terbalik sehingga children paling kiri
+ diproses terlebih dahulu.
+
+\subsection{Pseudocode DFS}
+
+Algoritma DFS untuk traversal pohon DOM dengan pencarian berdasarkan CSS selector
+dapat dilihat pada Algoritma \ref{alg:dfs}.
+
+\begin{algorithm}
+\caption{DFS untuk Penelusuran Pohon DOM}
+\label{alg:dfs}
+\begin{algorithmic}[1]
+\Function{DFS}{$root, selectorChain, limit$}
+    \State $stack \gets$ Stack dengan elemen $root$
+    \State $visited \gets 0$
+    \State $results \gets$ list kosong
+    \State $log \gets$ list kosong
+    \State $start \gets$ waktu sekarang
+    
+    \While{$stack$ tidak kosong}
+        \State $node \gets stack.$\Call{Pop}{}
+        \State $visited \gets visited + 1$
+        
+        \If{\Call{MatchChain}{$node, selectorChain$}}
+            \State \Call{Append}{$log, (visited, node, \text{"match"})$}
+            \State \Call{Append}{$results, node$}
+            \If{$limit > 0$ dan $|results| \geq limit$}
+                \State \textbf{break}
+            \EndIf
+        \Else
+            \State \Call{Append}{$log, (visited, node, \text{"visit"})$}
+        \EndIf
+        
+        \For{$i \gets |node.Children| - 1$ downto $0$}
+            \State $stack.$\Call{Push}{$node.Children[i]$}
+        \EndFor
+    \EndWhile
+    
+    \State $elapsed \gets$ waktu sejak $start$
+    \State \Return \{$results, log, visited, elapsed, \text{"dfs"}$\}
+\EndFunction
+\end{algorithmic}
+\end{algorithm}
+
+\subsection{Analisis Kompleksitas}
+
+Kompleksitas waktu DFS adalah $O(N)$, di mana $N$ adalah jumlah total node dalam
+pohon, sama seperti BFS. Namun, kompleksitas ruang DFS adalah $O(H)$, di mana $H$
+adalah tinggi maksimum pohon (kedalaman terdalam dari leaf node), karena stack
+hanya menyimpan node-node pada satu path dari root ke leaf yang sedang dijelajahi.
+
+DFS lebih hemat memori pada pohon yang lebar karena tidak perlu menyimpan semua
+node pada satu level. DFS juga menemukan elemen pada kedalaman tertentu lebih
+cepat daripada BFS. Namun, DFS tidak menjamin menemukan elemen pada level yang
+dangkal terlebih dahulu, yang dapat menjadi kelemahan jika target kemungkinan
+besar berada di level atas pohon.
+
+\section{Perbandingan BFS dan DFS}
+
+BFS dan DFS merupakan dua algoritma traversal fundamental yang memiliki
+karakteristik berbeda dalam hal urutan kunjungan node, penggunaan memori, dan
+kesesuaian dengan berbagai skenario pencarian. Tabel \ref{tab:bfs-dfs-comparison}
+menyajikan perbandingan komprehensif antara kedua algoritma.
+
+\begin{table}[H]
+\centering
+\caption{Perbandingan Algoritma BFS dan DFS}
+\label{tab:bfs-dfs-comparison}
+\begin{tabular}{|p{4cm}|p{5cm}|p{5cm}|}
+\hline
+\textbf{Aspek} & \textbf{BFS} & \textbf{DFS} \\
+\hline
+Struktur Data & Queue (FIFO) & Stack (LIFO) \\
+\hline
+Urutan Kunjungan & Level-by-level & Depth-first (subtree lengkap dulu) \\
+\hline
+Kompleksitas Waktu & $O(N)$ & $O(N)$ \\
+\hline
+Kompleksitas Ruang & $O(W)$ --- lebar maksimum pohon & $O(H)$ --- tinggi maksimum pohon \\
+\hline
+Menemukan Top-Level Duluan & Ya & Tidak \\
+\hline
+Menemukan Deep Element Duluan & Tidak & Ya \\
+\hline
+Cocok untuk Pohon Lebar & Boros memori & Hemat memori \\
+\hline
+Cocok untuk Pohon Dalam & Hemat memori & Boros memori (jika sangat dalam) \\
+\hline
+\end{tabular}
+\end{table}
+
+\subsection{Pemilihan Algoritma yang Tepat}
+
+Pemilihan antara BFS dan DFS bergantung pada karakteristik pohon DOM dan sifat
+pencarian yang dilakukan:
+
+\begin{itemize}
+    \item \textbf{Gunakan BFS} ketika:
+    \begin{itemize}
+        \item Elemen target kemungkinan besar berada di level dangkal pohon
+        \item Pohon memiliki struktur yang dalam (tidak terlalu lebar)
+        \item Perlu menemukan elemen terdekat dari root
+        \item Memori tidak menjadi kendala utama
+    \end{itemize}
+    
+    \item \textbf{Gunakan DFS} ketika:
+    \begin{itemize}
+        \item Elemen target kemungkinan besar berada di kedalaman tertentu
+        \item Pohon memiliki struktur yang lebar (banyak children per node)
+        \item Perlu menelusuri satu subtree lengkap sebelum berpindah
+        \item Penggunaan memori perlu diminimalkan
+    \end{itemize}
+\end{itemize}
+
+Dalam konteks penelusuran CSS Selector pada pohon DOM, kedua algoritma dapat
+digunakan bergantung pada pola dokumen HTML yang umum dijumpai. BFS menguntungkan
+untuk selector yang menargetkan elemen umum seperti \texttt{<p>} atau \texttt{<div>}
+yang biasanya tersebar di berbagai level. DFS menguntungkan untuk selector dengan
+combinator descendant (\texttt{div p}) karena dapat menelusuri satu cabang pohon
+secara lengkap.
+
+\section{Web Scraping}
+
+\textit{Web scraping} adalah teknik ekstraksi data dari situs web dengan
+mengambil konten halaman web dan mengubahnya menjadi format yang dapat diproses
+secara terstruktur \cite{w3school_scraping}. Dalam konteks program Berry-Manuka,
+web scraping digunakan untuk mengambil dokumen HTML dari URL yang diberikan
+pengguna sebelum dokumen tersebut diparse menjadi pohon DOM.
+
+\subsection{HTTP Client dan Request Handling}
+
+Proses web scraping dimulai dengan membuat HTTP request ke URL target menggunakan
+\textit{HTTP client}. Request yang umum digunakan untuk mengambil halaman web adalah
+HTTP GET request. HTTP client mengirimkan request ke peladen web dan menerima
+response yang berisi status code, headers, dan body (konten halaman).
+
+Headers dalam HTTP response memberikan informasi penting seperti:
+\begin{itemize}
+    \item \texttt{Content-Type}: menunjukkan tipe konten (harus \texttt{text/html}
+    untuk dokumen HTML)
+    \item \texttt{Content-Length}: ukuran konten dalam bytes
+    \item \texttt{Status Code}: hasil permintaan (200 OK untuk sukses)
+\end{itemize}
+
+\subsection{Validasi dan Error Handling}
+
+Beberapa aspek penting dalam implementasi web scraping yang robust:
+
+\begin{itemize}
+    \item \textbf{URL Validation}: memastikan URL valid dengan skema yang benar
+    (\texttt{http://} atau \texttt{https://}) dan format yang sesuai.
+    
+    \item \textbf{Timeout}: membatasi waktu tunggu response untuk mencegah program
+    hang jika peladen tidak merespons. Timeout yang umum digunakan adalah 10-30
+detik.
+    
+    \item \textbf{Size Limit}: membatasi ukuran konten yang diunduh untuk mencegah
+    penggunaan memori yang berlebihan. Batas yang umum adalah 5-10 MB.
+    
+    \item \textbf{Error Handling}: menangani berbagai skenario error seperti
+    connection timeout, DNS resolution failure, HTTP error codes (404, 500, dll),
+    dan invalid content type.
+\end{itemize}
+
+\subsection{Security Considerations}
+
+Web scraping perlu memperhatikan aspek keamanan dan etika:
+
+\begin{itemize}
+    \item \textbf{Robots.txt}: menghormati file \texttt{robots.txt} yang menentukan
+    bagian situs mana yang boleh atau tidak boleh di-scrape.
+    \item \textbf{Rate Limiting}: tidak membuat request terlalu sering ke satu
+    situs untuk menghindari beban berlebih pada peladen.
+    \item \textbf{Static vs Dynamic Content}: web scraping menggunakan HTTP client
+    standar hanya dapat mengambil konten \textit{static}. Konten yang dirender
+    menggunakan JavaScript (\textit{dynamic content}) memerlukan tools khusus
+    seperti \textit{headless browser}.
+\end{itemize}
+
+Dalam implementasi Berry-Manuka, web scraping dilakukan menggunakan paket
+\texttt{net/http} dari bahasa Go yang menyediakan HTTP client dengan dukungan
+\textit{timeout}, \textit{redirect handling}, dan validasi \textit{content-type}.
+
+\section{Lowest Common Ancestor dan Binary Lifting}
+
+\textit{Lowest Common Ancestor} (LCA) dari dua node dalam pohon adalah node
+terdalam yang merupakan ancestor dari kedua node tersebut \cite{cpalgorithms_lca}.
+Dalam konteks pohon DOM, LCA merepresentasikan elemen kontainer terdekat yang
+mengandung kedua elemen yang dipilih.
+
+\subsection{Definisi LCA}
+
+Diberikan pohon $T$ dengan root $r$ dan dua node $u$ dan $v$ dalam pohon tersebut,
+LCA dari $u$ dan $v$ (dinotasikan $\text{LCA}(u, v)$) adalah node $w$ dengan
+kedalaman maksimum sedemikian sehingga $w$ adalah ancestor dari $u$ dan $w$
+juga adalah ancestor dari $v$.
+
+\subsection{Pendekatan Naive}
+
+Pendekatan sederhana untuk mencari LCA adalah dengan menelusuri parent dari
+kedua node secara bersamaan hingga ditemukan node yang sama. Algoritma ini:
+\begin{enumerate}
+    \item Samakan kedalaman kedua node dengan menggerakkan node yang lebih dalam
+    ke atas (menuju parent) hingga kedalaman sama.
+    \item Gerakkan kedua node ke atas bersamaan hingga keduanya bertemu di node
+    yang sama. Node pertemuan tersebut adalah LCA.
+\end{enumerate}
+Kompleksitas pendekatan naive adalah $O(N)$ per query dalam kasus terburuk,
+di mana $N$ adalah jumlah node dalam pohon.
 
 \subsection{Binary Lifting}
 
-Binary Lifting merupakan teknik Dynamic Programming pada struktur tree untuk menemukan ancestor suatu node secara efisien. Teknik ini melakukan precomputation terhadap ancestor dari setiap node dalam bentuk tabel.
+\textit{Binary Lifting} adalah teknik optimasi yang memungkinkan query LCA dalam
+kompleksitas $O(\log N)$ dengan preprocessing $O(N \log N)$ \cite{bender2000lca}.
+Teknik ini menggunakan tabel \textit{sparse table} untuk menyimpan ancestor
+$2^k$ dari setiap node.
 
-Dengan metode ini, pencarian ancestor dapat dilakukan dalam kompleksitas waktu logaritmik, sehingga sangat efisien untuk menangani banyak query.
+\subsubsection{Preprocessing}
 
-\begin{figure}[H]
-    \centering
-    \includegraphics[width=0.5\textwidth]{binary_lifting.png}
-    \caption{Ilustrasi Binary Lifting}
-\end{figure}
+Didefinisikan $\text{up}[v][k]$ sebagai ancestor ke-$2^k$ dari node $v$:
+\begin{itemize}
+    \item $\text{up}[v][0] = \text{parent}(v)$ (ancestor $2^0 = 1$)
+    \item $\text{up}[v][k] = \text{up}[\text{up}[v][k-1]][k-1]$ untuk $k > 0$
+    (ancestor $2^k$ adalah ancestor $2^{k-1}$ dari ancestor $2^{k-1}$)
+\end{itemize}
+
+Tabel diisi menggunakan BFS atau DFS dari root. Nilai $\text{MAXLOG}$ dipilih
+sedemikian sehingga $2^{\text{MAXLOG}} > N$. Untuk pohon dengan hingga sekitar
+1 juta node, $\text{MAXLOG} = 20$ sudah mencukupi karena $2^{20} = 1.048.576$.
+
+\subsubsection{Query LCA}
+
+Algoritma query LCA dengan Binary Lifting:
+\begin{enumerate}
+    \item \textbf{Samakan kedalaman}: jika $\text{depth}[u] > \text{depth}[v]$,
+    tukar $u$ dan $v$. Kemudian naikkan $u$ menggunakan binary lifting hingga
+    $\text{depth}[u] = \text{depth}[v]$.
+    
+    \item \textbf{Binary lift bersama}: jika $u = v$ setelah langkah 1, return $u$.
+    Jika tidak, naikkan $u$ dan $v$ bersamaan dari $k = \text{MAXLOG}-1$ hingga
+    $0$, tetapi hanya jika $\text{up}[u][k] \neq \text{up}[v][k]$. Ini memastikan
+    kita tidak melewati LCA.
+    
+    \item \textbf{Return parent}: LCA adalah parent dari $u$ (atau $v$), yaitu
+    $\text{up}[u][0]$.
+\end{enumerate}
+
+Teknik ini juga memungkinkan rekonstruksi jalur dari suatu node ke root dengan
+kompleksitas $O(\log N)$ per node dalam jalur.
+
+\section{Konkurensi dan Goroutine}
+
+\textit{Concurrency} adalah kemampuan suatu program untuk menjalankan beberapa
+tugas secara bersamaan atau tumpang tindih dalam waktu \cite{donovan2015go}.
+Concurrency berbeda dengan \textit{parallelism}: concurrency berkaitan dengan
+struktur program yang memungkinkan beberapa tugas berjalan secara bersamaan,
+sedangkan parallelism berkaitan dengan eksekusi fisik beberapa tugas secara
+simultan pada beberapa prosesor.
+
+\subsection{Goroutine}
+
+\textit{Goroutine} adalah unit eksekusi ringan (\textit{lightweight}) yang
+disediakan oleh bahasa pemrograman Go untuk mendukung concurrency. Berbeda dengan
+\textit{thread} pada umumnya yang dikelola oleh sistem operasi, goroutine
+dikelola oleh \textit{runtime} Go sehingga lebih efisien dalam penggunaan memori
+(biasanya hanya beberapa KB) dan lebih cepat dalam pembuatan serta penghancurannya.
+
+Goroutine dibuat dengan menambahkan kata kunci \texttt{go} sebelum pemanggilan
+fungsi:
+\begin{verbatim}
+go namaFungsi(argumen)
+\end{verbatim}
+
+Program utama (\texttt{main}) dan semua goroutine yang aktif berjalan secara
+concurrent, memungkinkan pemanfaatan multi-core processor untuk parallelism.
+
+\subsection{Sinkronisasi dengan WaitGroup}
+
+\textit{WaitGroup} dari paket \texttt{sync} adalah mekanisme sinkronisasi yang
+memungkinkan sebuah goroutine menunggu selesainya sejumlah goroutine lain.
+WaitGroup memiliki tiga metode utama:
+\begin{itemize}
+    \item \texttt{Add(n)}: menambah counter sebesar $n$
+    \item \texttt{Done()}: mengurangi counter (dipanggil oleh goroutine yang
+    selesai)
+    \item \texttt{Wait()}: blok sampai counter mencapai nol
+\end{itemize}
+
+\subsection{Thread Safety dengan Mutex}
+
+\textit{Mutex} (\textit{mutual exclusion}) dari paket \texttt{sync} adalah
+mekanisme penguncian yang memastikan hanya satu goroutine yang mengakses
+sumber daya bersama pada satu waktu. Ini mencegah \textit{race condition}
+ketika beberapa goroutine mengakses dan memodifikasi data bersama secara
+bersamaan.
+
+Mutex memiliki dua metode utama:
+\begin{itemize}
+    \item \texttt{Lock()}: mengakuisisi lock. Jika lock sedang dipegang goroutine
+    lain, goroutine ini akan blok sampai lock tersedia.
+    \item \texttt{Unlock()}: melepaskan lock, memungkinkan goroutine lain
+    mengakuisisinya.
+\end{itemize}
+
+\subsection{Parallel BFS dan DFS}
+
+\textit{Parallel BFS} dapat diimplementasikan dengan memproses semua node pada
+level yang sama secara paralel menggunakan goroutine. Setiap node diproses
+oleh goroutine terpisah, dan hasilnya dikumpulkan menggunakan mutex untuk
+melindungi akses ke struktur data bersama.
+
+\textit{Parallel DFS} dapat diimplementasikan dengan memproses setiap subtree
+langsung dari root secara paralel. Setiap child dari root diproses oleh
+goroutine terpisah yang menjalankan DFS sequential pada subtree tersebut.
+
+Keuntungan parallel traversal tergantung pada ukuran pohon dan struktur hardware.
+Untuk pohon yang cukup besar, overhead pembuatan goroutine dapat diimbangi oleh
+gain dari eksekusi paralel. Namun, untuk pohon kecil, sequential traversal
+mungkin lebih cepat karena tidak ada overhead sinkronisasi.
+
+\section{Containerization dan Docker}
+
+\textit{Containerization} adalah teknik virtualisasi tingkat sistem operasi yang
+memungkinkan aplikasi dan dependensinya dikemas dalam sebuah \textit{container}
+yang terisolasi \cite{docker_docs}. Container menyediakan lingkungan runtime
+yang konsisten dan portable, memastikan aplikasi berjalan sama di berbagai
+environment (development, testing, production).
+
+\subsection{Konsep Container}
+
+Container berbeda dengan \textit{virtual machine} (VM) tradisional. VM
+mengemulasikan seluruh sistem operasi termasuk kernel, sedangkan container
+berbagi kernel sistem operasi host dan hanya mengisolasi proses, filesystem,
+dan network namespace. Ini membuat container jauh lebih ringan dan cepat
+dibandingkan VM.
+
+Keuntungan menggunakan container:
+\begin{itemize}
+    \item \textbf{Portability}: aplikasi dalam container dapat berjalan di
+    environment mana pun yang mendukung container runtime
+    \item \textbf{Isolation}: setiap container memiliki filesystem, proses, dan
+    network yang terpisah, mencegah konflik antar aplikasi
+    \item \textbf{Efficiency}: container menggunakan sumber daya lebih efisien
+daripada VM karena berbagi kernel OS
+    \item \textbf{Scalability}: container dapat dengan mudah direplikasi dan
+di-\textit{orchestrate} menggunakan tools seperti Docker Compose atau Kubernetes
+\end{itemize}
+
+\subsection{Docker}
+
+Docker adalah platform containerization yang paling populer, menyediakan tools
+untuk membangun, menjalankan, dan mengelola container. Komponen utama Docker
+meliputi:
+
+\begin{itemize}
+    \item \textbf{Docker Engine}: runtime container yang menjalankan container
+    \item \textbf{Dockerfile}: file konfigurasi yang mendefinisikan cara membangun
+    \textit{image} container
+    \item \textbf{Docker Image}: template read-only untuk membuat container
+    \item \textbf{Docker Compose}: tool untuk mendefinisikan dan menjalankan
+    multi-container applications
+\end{itemize}
+
+\subsection{Dockerfile dan Multi-Stage Builds}
+
+\textit{Dockerfile} mendefinisikan instruksi untuk membangun image container.
+\textit{Multi-stage builds} adalah teknik yang menggunakan beberapa \texttt{FROM}
+statements dalam satu Dockerfile, memungkinkan pemisahan antara environment
+build dan runtime.
+
+Keuntungan multi-stage builds:
+\begin{itemize}
+    \item Mengurangi ukuran final image dengan hanya menyertakan artifacts yang
+    diperlukan (binary executable), tidak termasuk tools build
+    \item Meningkatkan keamanan dengan tidak menyertakan compiler atau tools
+    development dalam image production
+    \item Mempercepat deployment karena image yang lebih kecil lebih cepat di-push
+    dan di-pull
+\end{itemize}
+
+\subsection{Docker Compose}
+
+\textit{Docker Compose} adalah tool untuk mendefinisikan dan menjalankan
+aplikasi multi-container. Dengan menggunakan file \texttt{docker-compose.yml},
+seluruh stack aplikasi (frontend, backend, database, dll) dapat didefinisikan
+secara deklaratif dan dijalankan dengan satu perintah.
+
+Docker Compose mengelola:
+\begin{itemize}
+    \item Pembuatan dan konfigurasi container
+    \item Network antara container
+    \item Volume untuk persistent storage
+    \item Dependency dan urutan startup antar services
+    \item Environment variables dan port mapping
+\end{itemize}
+
+Dalam konteks program Berry-Manuka, Docker Compose digunakan untuk mengorkestrasi
+dua container: backend (Go) dan frontend (Next.js), memastikan kedua service
+dapat berkomunikasi dan dijalankan bersama dengan konfigurasi yang konsisten.
