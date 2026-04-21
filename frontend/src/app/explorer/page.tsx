@@ -571,6 +571,8 @@ function TreeCanvas({
   onSelectNode: (node: DOMNode) => void;
   zoom: number;
 }) {
+  const viewportRef = useRef<HTMLDivElement | null>(null);
+  const [viewportSize, setViewportSize] = useState({ width: 0, height: 0 });
   const layout = useMemo(() => computeTreeLayout(tree), [tree]);
   const depthGuides = useMemo(() => {
     const depthToY = new Map<number, number>();
@@ -586,17 +588,47 @@ function TreeCanvas({
       .sort((a, b) => a[0] - b[0])
       .map(([depth, y]) => ({ depth, y }));
   }, [layout.nodes]);
+  const fitScale = useMemo(() => {
+    if (viewportSize.width <= 0 || viewportSize.height <= 0) return 1;
+
+    const paddedWidth = Math.max(1, viewportSize.width);
+    const paddedHeight = Math.max(1, viewportSize.height);
+
+    return Math.min(paddedWidth / layout.width, paddedHeight / layout.height);
+  }, [viewportSize.width, viewportSize.height, layout.width, layout.height]);
+  const effectiveScale = Math.max(0.25, fitScale * zoom);
+
+  useEffect(() => {
+    const container = viewportRef.current;
+    if (!container) return;
+
+    const observer = new ResizeObserver((entries) => {
+      const rect = entries[0]?.contentRect;
+      if (!rect) return;
+
+      setViewportSize({
+        width: rect.width,
+        height: rect.height,
+      });
+    });
+
+    observer.observe(container);
+
+    return () => observer.disconnect();
+  }, []);
 
   return (
-    <div
-      className="origin-top transition-transform duration-200"
-      style={{ transform: `scale(${zoom})` }}
-    >
-      <div
-        className="relative rounded-2xl border border-emerald-100/8 bg-[#071017]/30 shadow-[inset_0_1px_0_rgba(255,255,255,0.04)]"
-        style={{ width: layout.width, height: layout.height }}
-      >
-        <svg className="pointer-events-none absolute inset-0 h-full w-full">
+    <div ref={viewportRef} className="h-full w-full overflow-auto">
+      <div className="flex min-h-full min-w-full items-start justify-center">
+        <div
+          className="origin-top transition-transform duration-200"
+          style={{ transform: `scale(${effectiveScale})` }}
+        >
+          <div
+            className="relative rounded-2xl border border-emerald-100/8 bg-[#071017]/30 shadow-[inset_0_1px_0_rgba(255,255,255,0.04)]"
+            style={{ width: layout.width, height: layout.height }}
+          >
+            <svg className="pointer-events-none absolute inset-0 h-full w-full">
           {depthGuides.map(({ depth, y }) => (
             <g key={`depth-${depth}`}>
               <line
@@ -619,53 +651,55 @@ function TreeCanvas({
             </g>
           ))}
 
-          {layout.edges.map((edge) => {
-            const parent = layout.byId.get(edge.parentId);
-            const child = layout.byId.get(edge.childId);
-            if (!parent || !child) return null;
+              {layout.edges.map((edge) => {
+                const parent = layout.byId.get(edge.parentId);
+                const child = layout.byId.get(edge.childId);
+                if (!parent || !child) return null;
 
-            const isActive = edgeActive(parent.node, child.node, visitedIds, currentAnimatedNodeId);
-            const startX = parent.x;
-            const startY = parent.y + 16;
-            const endX = child.x;
-            const endY = child.y - 16;
-            const controlY = startY + (endY - startY) * 0.56;
+                const isActive = edgeActive(parent.node, child.node, visitedIds, currentAnimatedNodeId);
+                const startX = parent.x;
+                const startY = parent.y + 16;
+                const endX = child.x;
+                const endY = child.y - 16;
+                const controlY = startY + (endY - startY) * 0.56;
 
-            return (
-              <path
-                key={`${edge.parentId}-${edge.childId}`}
-                d={`M ${startX} ${startY} C ${startX} ${controlY}, ${endX} ${controlY}, ${endX} ${endY}`}
-                fill="none"
-                stroke={isActive ? "hsl(var(--primary))" : "rgba(87, 229, 171, 0.62)"}
-                strokeWidth={isActive ? 2.8 : 2}
-                strokeLinecap="round"
-                className={isActive ? "drop-shadow-[0_0_10px_hsl(var(--primary)/0.58)]" : ""}
-              />
-            );
-          })}
-        </svg>
+                return (
+                  <path
+                    key={`${edge.parentId}-${edge.childId}`}
+                    d={`M ${startX} ${startY} C ${startX} ${controlY}, ${endX} ${controlY}, ${endX} ${endY}`}
+                    fill="none"
+                    stroke={isActive ? "hsl(var(--primary))" : "rgba(87, 229, 171, 0.62)"}
+                    strokeWidth={isActive ? 2.8 : 2}
+                    strokeLinecap="round"
+                    className={isActive ? "drop-shadow-[0_0_10px_hsl(var(--primary)/0.58)]" : ""}
+                  />
+                );
+              })}
+            </svg>
 
-        {layout.nodes.map(({ node, x, y }) => {
-          let state: NodeState = "default";
-          if (matchIds.includes(node.id)) state = "match";
-          else if (currentAnimatedNodeId === node.id) state = "current";
-          else if (visitedIds.includes(node.id)) state = "visited";
+            {layout.nodes.map(({ node, x, y }) => {
+              let state: NodeState = "default";
+              if (matchIds.includes(node.id)) state = "match";
+              else if (currentAnimatedNodeId === node.id) state = "current";
+              else if (visitedIds.includes(node.id)) state = "visited";
 
-          return (
-            <div
-              key={node.id}
-              className="absolute -translate-x-1/2 -translate-y-1/2"
-              style={{ left: x, top: y }}
-            >
-              <NodePill
-                node={node}
-                state={state}
-                selected={selectedNodeId === node.id}
-                onClick={() => onSelectNode(node)}
-              />
-            </div>
-          );
-        })}
+              return (
+                <div
+                  key={node.id}
+                  className="absolute -translate-x-1/2 -translate-y-1/2"
+                  style={{ left: x, top: y }}
+                >
+                  <NodePill
+                    node={node}
+                    state={state}
+                    selected={selectedNodeId === node.id}
+                    onClick={() => onSelectNode(node)}
+                  />
+                </div>
+              );
+            })}
+          </div>
+        </div>
       </div>
     </div>
   );
@@ -689,7 +723,7 @@ export default function ExplorerPage() {
   const [logs, setLogs] = useState<TraversalLogEntry[]>(DUMMY_LOGS);
 
   const [speed, setSpeed] = useState(350);
-  const [zoom, setZoom] = useState(0.7);
+  const [zoom, setZoom] = useState(1);
 
   const [selectedNodeId, setSelectedNodeId] = useState<string | null>(null);
   const [bottomTab, setBottomTab] = useState<"logs" | "inspector">("logs");
@@ -838,7 +872,7 @@ export default function ExplorerPage() {
   }
 
   return (
-    <section className="h-[calc(100vh-176px)] min-h-[700px] overflow-hidden">
+    <section className="h-[calc(100vh-84px)] overflow-hidden">
       <div className="grid h-full grid-cols-[380px_minmax(0,1fr)]">
         <aside className="flex h-full flex-col border-r border-border bg-background/80">
           <div className="flex-1 overflow-y-auto px-6 py-6">
@@ -979,7 +1013,7 @@ export default function ExplorerPage() {
           </div>
         </aside>
 
-        <div className="grid h-full grid-rows-[82px_minmax(0,1fr)_240px]">
+        <div className="grid h-full grid-rows-[82px_minmax(0,1fr)_280px]">
           <div className="flex items-center justify-between border-b border-border px-6">
             <div className="flex items-center gap-5">
               <div className="flex items-center gap-2 rounded-xl border border-border bg-card/40 p-1">
@@ -1077,7 +1111,7 @@ export default function ExplorerPage() {
               </button>
             </div>
 
-            <div className="relative flex min-h-full min-w-[1300px] items-start justify-center px-10 py-10">
+            <div className="relative h-full w-full">
               {tree ? (
                 <TreeCanvas
                   tree={tree}
@@ -1156,7 +1190,7 @@ export default function ExplorerPage() {
 
             <div
               ref={logViewportRef}
-              className="h-[220px] overflow-auto bg-[#0d1117] px-4 py-4 font-mono text-sm"
+              className="min-h-0 flex-1 overflow-auto bg-[#0d1117] px-4 py-4 font-mono text-sm"
             >
               {bottomTab === "logs" ? (
                 logs.length === 0 ? (
