@@ -5,6 +5,9 @@ import Footer from "@/components/Footer";
 export const metadata = {
   title: "iloveTree",
   description: "DOM Tree Explorer with BFS and DFS traversal",
+  icons: {
+    icon: "/logo-tree.ico",
+  },
 };
 
 export default function RootLayout({
