@@ -466,6 +466,9 @@ function computeTreeLayout(root: DOMNode, horizontalGap = 128, verticalGap = 108
   const rawNodes = new Map<string, PositionedNode>();
   let cursorX = 0;
   let maxDepth = 0;
+  const leftGutter = 132;
+  const rightGutter = 72;
+  const topGutter = 56;
 
   const placeNode = (node: DOMNode, depth: number): number => {
     maxDepth = Math.max(maxDepth, depth);
@@ -497,8 +500,8 @@ function computeTreeLayout(root: DOMNode, horizontalGap = 128, verticalGap = 108
 
   const nodes = values.map((item) => ({
     ...item,
-    x: item.x - minX + 70,
-    y: item.y + 56,
+    x: item.x - minX + leftGutter,
+    y: item.y + topGutter,
   }));
 
   const byId = new Map(nodes.map((item) => [item.node.id, item]));
@@ -507,7 +510,7 @@ function computeTreeLayout(root: DOMNode, horizontalGap = 128, verticalGap = 108
     nodes,
     byId,
     edges: collectEdges(root),
-    width: Math.max(1200, maxX - minX + 140),
+    width: Math.max(1200, maxX - minX + leftGutter + rightGutter),
     height: Math.max(560, maxDepth * verticalGap + 180),
   };
 }
@@ -532,7 +535,7 @@ function NodePill({
 }) {
   const stateClass =
     state === "match"
-      ? "border-primary/90 bg-primary/25 text-primary-foreground shadow-[0_0_24px_hsl(var(--primary)/0.45)]"
+      ? "border-rose-300/70 bg-rose-400/18 text-rose-100 shadow-[0_0_24px_rgba(251,113,133,0.35)]"
       : state === "current"
       ? "border-yellow-300 bg-yellow-300/20 text-yellow-100 shadow-[0_0_20px_rgba(250,204,21,0.35)]"
       : state === "visited"
@@ -618,29 +621,32 @@ function TreeCanvas({
   }, []);
 
   return (
-    <div ref={viewportRef} className="h-full w-full overflow-auto">
+    <div
+      ref={viewportRef}
+      className="h-full w-full overflow-auto bg-[radial-gradient(120%_100%_at_50%_0%,rgba(16,185,129,0.14)_0%,rgba(6,18,28,0.92)_45%,rgba(5,12,20,1)_100%)]"
+    >
       <div className="flex min-h-full min-w-full items-start justify-center">
         <div
           className="origin-top transition-transform duration-200"
           style={{ transform: `scale(${effectiveScale})` }}
         >
           <div
-            className="relative rounded-2xl border border-emerald-100/8 bg-[#071017]/30 shadow-[inset_0_1px_0_rgba(255,255,255,0.04)]"
+            className="relative"
             style={{ width: layout.width, height: layout.height }}
           >
             <svg className="pointer-events-none absolute inset-0 h-full w-full">
           {depthGuides.map(({ depth, y }) => (
             <g key={`depth-${depth}`}>
               <line
-                x1={34}
+                x1={72}
                 y1={y}
-                x2={layout.width - 34}
+                x2={layout.width - 40}
                 y2={y}
                 stroke="rgba(165, 214, 196, 0.13)"
                 strokeDasharray="6 10"
               />
               <text
-                x={8}
+                x={16}
                 y={y + 4}
                 fill="rgba(190, 225, 210, 0.52)"
                 fontSize={10}
@@ -711,6 +717,7 @@ export default function ExplorerPage() {
   const [selectorInput, setSelectorInput] = useState(".active");
   const [algorithm, setAlgorithm] = useState<"BFS" | "DFS">("BFS");
   const [resultMode, setResultMode] = useState<"ALL" | "TOP_N">("ALL");
+  const [topNInput, setTopNInput] = useState("5");
 
   const [parseError, setParseError] = useState("");
   const [traversalError, setTraversalError] = useState("");
@@ -737,6 +744,16 @@ export default function ExplorerPage() {
     [tree, selectedNodeId]
   );
 
+  const topNValue = useMemo(() => {
+    const parsed = Number.parseInt(topNInput.trim(), 10);
+    return Number.isFinite(parsed) && parsed > 0 ? parsed : 1;
+  }, [topNInput]);
+
+  const displayedLogs = useMemo(
+    () => (resultMode === "TOP_N" ? logs.slice(0, topNValue) : logs),
+    [logs, resultMode, topNValue]
+  );
+
   const visitedIds = useMemo(
     () => logs.filter((_, index) => index < animationIndex).map((log) => log.nodeId),
     [logs, animationIndex]
@@ -754,12 +771,27 @@ export default function ExplorerPage() {
 
   const flattenedNodes = useMemo(() => (tree ? flattenNodes(tree) : []), [tree]);
   const totalNodes = flattenedNodes.length;
-  const maxDepth = flattenedNodes.length
+  const treeMaxDepth = flattenedNodes.length
     ? Math.max(...flattenedNodes.map((node) => node.depth ?? 0))
     : 0;
-  const visitedCount = Math.min(animationIndex, logs.filter((log) => log.action !== "skip").length);
+  const maxDepth = logs.length
+    ? Math.max(...logs.map((log) => log.depth))
+    : treeMaxDepth;
+  const activeModeLabel = algorithm === "BFS" ? "Breadth First Search" : "Depth First Search";
+  const visitedCount = Math.min(
+    animationIndex,
+    logs.filter((log) => log.action !== "skip").length
+  );
   const matchCount = logs.filter((log) => log.action === "match").length;
-  const visibleLogs = logs.slice(0, Math.max(animationIndex, 1));
+  const visibleLogs = displayedLogs;
+  const sideToggleClass =
+    "flex-1 rounded-xl border px-4 py-3 text-sm font-semibold tracking-[0.04em] transition-all duration-200";
+  const sidePrimaryButtonClass =
+    "mt-4 w-full rounded-2xl border px-4 py-4 text-lg font-semibold transition-all duration-200";
+  const calmActiveButtonClass =
+    "border-blue-300/45 bg-blue-400/12 text-blue-200";
+  const calmInactiveButtonClass =
+    "border-white/10 bg-[#0b1220]/75 text-[#a8b4c3] hover:border-blue-300/30 hover:bg-[#101b2d] hover:text-[#dbeafe]";
 
   useEffect(() => {
     if (!animationRunning) return;
@@ -847,6 +879,11 @@ export default function ExplorerPage() {
       return;
     }
 
+    if (resultMode === "TOP_N" && (!/^\d+$/.test(topNInput.trim()) || Number(topNInput) <= 0)) {
+      setTraversalError("Nilai N harus bilangan bulat lebih dari 0.");
+      return;
+    }
+
     setIsTraversing(true);
     setAnimationIndex(0);
     setBottomTab("logs");
@@ -872,7 +909,7 @@ export default function ExplorerPage() {
   }
 
   return (
-    <section className="h-[calc(100vh-84px)] overflow-hidden">
+    <section className="min-h-[calc(100vh-84px)] h-[calc(100vh+320px)] overflow-hidden">
       <div className="grid h-full grid-cols-[380px_minmax(0,1fr)]">
         <aside className="flex h-full flex-col border-r border-border bg-background/80">
           <div className="flex-1 overflow-y-auto px-6 py-6">
@@ -884,20 +921,20 @@ export default function ExplorerPage() {
               <div className="mb-4 flex gap-3">
                 <button
                   onClick={() => setSourceMode("URL")}
-                  className={`flex-1 rounded-xl border px-4 py-3 text-sm font-medium transition ${
+                  className={`${sideToggleClass} ${
                     sourceMode === "URL"
-                      ? "border-primary bg-primary/15 text-primary shadow-[0_0_14px_hsl(var(--primary)/0.16)]"
-                      : "border-border bg-card/40 text-muted-foreground hover:border-primary/50 hover:bg-primary/5 hover:text-primary"
+                      ? calmActiveButtonClass
+                      : calmInactiveButtonClass
                   }`}
                 >
                   URL
                 </button>
                 <button
                   onClick={() => setSourceMode("HTML")}
-                  className={`flex-1 rounded-xl border px-4 py-3 text-sm font-medium transition ${
+                  className={`${sideToggleClass} ${
                     sourceMode === "HTML"
-                      ? "border-primary bg-primary/15 text-primary shadow-[0_0_14px_hsl(var(--primary)/0.16)]"
-                      : "border-border bg-card/40 text-muted-foreground hover:border-primary/50 hover:bg-primary/5 hover:text-primary"
+                      ? calmActiveButtonClass
+                      : calmInactiveButtonClass
                   }`}
                 >
                   HTML
@@ -930,10 +967,10 @@ export default function ExplorerPage() {
               <button
                 onClick={handleParseHtml}
                 disabled={isParsing}
-                className={`mt-4 w-full rounded-2xl px-4 py-4 text-lg font-semibold transition ${
+                className={`${sidePrimaryButtonClass} ${
                   isParsing
-                    ? "cursor-not-allowed bg-primary/50 text-primary-foreground"
-                    : "bg-primary text-primary-foreground shadow-[0_0_24px_hsl(var(--primary)/0.22)] hover:opacity-90"
+                    ? "cursor-not-allowed border-white/10 bg-[#1a2534]/80 text-[#8fa0b6]"
+                    : "border-emerald-300/45 bg-emerald-400/12 text-emerald-200 hover:border-emerald-300/65 hover:bg-emerald-400/18"
                 }`}
               >
                 {isParsing ? "Parsing..." : "Parse HTML"}
@@ -964,20 +1001,20 @@ export default function ExplorerPage() {
               <div className="mb-4 flex gap-3">
                 <button
                   onClick={() => setResultMode("ALL")}
-                  className={`flex-1 rounded-xl border px-4 py-3 text-sm font-medium transition ${
+                  className={`${sideToggleClass} ${
                     resultMode === "ALL"
-                      ? "border-primary bg-primary/15 text-primary shadow-[0_0_14px_hsl(var(--primary)/0.16)]"
-                      : "border-border bg-card/40 text-muted-foreground hover:border-primary/50 hover:bg-primary/5 hover:text-primary"
+                      ? calmActiveButtonClass
+                      : calmInactiveButtonClass
                   }`}
                 >
                   All
                 </button>
                 <button
                   onClick={() => setResultMode("TOP_N")}
-                  className={`flex-1 rounded-xl border px-4 py-3 text-sm font-medium transition ${
+                  className={`${sideToggleClass} ${
                     resultMode === "TOP_N"
-                      ? "border-primary bg-primary/15 text-primary shadow-[0_0_14px_hsl(var(--primary)/0.16)]"
-                      : "border-border bg-card/40 text-muted-foreground hover:border-primary/50 hover:bg-primary/5 hover:text-primary"
+                      ? calmActiveButtonClass
+                      : calmInactiveButtonClass
                   }`}
                 >
                   Top N
@@ -985,20 +1022,22 @@ export default function ExplorerPage() {
               </div>
 
               <input
-                defaultValue="5"
+                value={topNInput}
+                onChange={(event) => setTopNInput(event.target.value)}
+                inputMode="numeric"
                 className="mb-5 w-full rounded-2xl border border-border bg-card/40 px-4 py-3 text-sm text-foreground outline-none focus:border-primary"
               />
 
               <button
                 onClick={handleRunTraversal}
                 disabled={!hasParsed || isTraversing}
-                className={`flex w-full items-center justify-center gap-3 rounded-2xl px-5 py-4 text-lg font-semibold transition ${
+                className={`flex w-full items-center justify-center gap-3 rounded-2xl border px-5 py-4 text-lg font-semibold transition-all duration-200 ${
                   !hasParsed || isTraversing
-                    ? "cursor-not-allowed bg-primary/50 text-primary-foreground"
-                    : "bg-primary text-primary-foreground shadow-[0_0_24px_hsl(var(--primary)/0.22)] hover:opacity-90"
+                    ? "cursor-not-allowed border-white/10 bg-[#1a2534]/80 text-[#8fa0b6]"
+                    : "border-emerald-300/45 bg-emerald-400/12 text-emerald-200 hover:border-emerald-300/65 hover:bg-emerald-400/18"
                 }`}
               >
-                <span>{">"}</span>
+        
                 {isTraversing ? "Running..." : "Run Traversal"}
               </button>
 
@@ -1013,7 +1052,7 @@ export default function ExplorerPage() {
           </div>
         </aside>
 
-        <div className="grid h-full grid-rows-[82px_minmax(0,1fr)_280px]">
+        <div className="grid h-full grid-rows-[82px_minmax(0,1fr)_clamp(320px,36vh,460px)]">
           <div className="flex items-center justify-between border-b border-border px-6">
             <div className="flex items-center gap-5">
               <div className="flex items-center gap-2 rounded-xl border border-border bg-card/40 p-1">
@@ -1021,8 +1060,8 @@ export default function ExplorerPage() {
                   onClick={() => setAlgorithm("BFS")}
                   className={`rounded-lg px-6 py-2.5 text-sm font-semibold transition ${
                     algorithm === "BFS"
-                      ? "bg-primary text-primary-foreground"
-                      : "text-muted-foreground hover:bg-primary/5 hover:text-primary"
+                      ? "bg-cyan-500/20 text-cyan-100"
+                      : "text-muted-foreground hover:bg-cyan-500/10 hover:text-cyan-200"
                   }`}
                 >
                   BFS
@@ -1031,8 +1070,8 @@ export default function ExplorerPage() {
                   onClick={() => setAlgorithm("DFS")}
                   className={`rounded-lg px-6 py-2.5 text-sm font-semibold transition ${
                     algorithm === "DFS"
-                      ? "bg-primary text-primary-foreground"
-                      : "text-muted-foreground hover:bg-primary/5 hover:text-primary"
+                      ? "bg-fuchsia-500/20 text-fuchsia-100"
+                      : "text-muted-foreground hover:bg-fuchsia-500/10 hover:text-fuchsia-200"
                   }`}
                 >
                   DFS
@@ -1048,13 +1087,13 @@ export default function ExplorerPage() {
                   }}
                   className="rounded-md px-2 py-1 text-muted-foreground transition hover:bg-primary/5 hover:text-primary"
                 >
-                  reset
+                  Reset
                 </button>
                 <button
                   onClick={() => setAnimationRunning((prev) => !prev)}
                   className="rounded-md bg-primary/20 px-3 py-1 text-primary transition hover:bg-primary/30"
                 >
-                  {animationRunning ? "pause" : "play"}
+                  {animationRunning ? "Pause" : "Play"}
                 </button>
 
                 <div className="mx-2 h-6 w-px bg-border" />
@@ -1074,6 +1113,15 @@ export default function ExplorerPage() {
                 />
 
                 <span className="text-sm text-muted-foreground">{speed}ms</span>
+                <span
+                  className={`rounded-md border px-2 py-1 text-xs font-semibold tracking-[0.08em] ${
+                    algorithm === "BFS"
+                      ? "border-cyan-300/40 bg-cyan-400/10 text-cyan-200"
+                      : "border-fuchsia-300/40 bg-fuchsia-400/10 text-fuchsia-200"
+                  }`}
+                >
+                  MODE {algorithm}
+                </span>
               </div>
             </div>
 
@@ -1098,8 +1146,8 @@ export default function ExplorerPage() {
             </div>
           </div>
 
-          <div className="relative overflow-auto border-b border-border bg-background/40">
-            <div className="grid-bg absolute inset-0 opacity-40" />
+          <div className="relative overflow-auto border-b border-border bg-[#071017]">
+            <div className="grid-bg absolute inset-0 opacity-70" />
 
             <div className="absolute right-6 top-6 z-20 flex items-center gap-4 rounded-xl border border-border bg-card/50 px-5 py-3 text-sm text-muted-foreground backdrop-blur-sm">
               <button onClick={handleZoomIn} className="rounded-md px-1 transition hover:text-primary">
@@ -1132,22 +1180,22 @@ export default function ExplorerPage() {
               )}
             </div>
 
-            <div className="absolute bottom-4 left-4 flex items-center gap-4 rounded-xl border border-border bg-card/50 px-4 py-3 text-xs text-muted-foreground backdrop-blur-sm">
-              <span className="flex items-center gap-2">
-                <span className="h-2.5 w-2.5 rounded-full bg-muted-foreground/70" />
-                default
+            <div className="absolute bottom-4 left-4 flex items-center gap-2 rounded-xl border border-white/15 bg-[#0b111b]/90 px-3 py-2 text-xs font-semibold text-[#d9e3ef] shadow-[0_10px_30px_rgba(0,0,0,0.3)] backdrop-blur-sm">
+              <span className="flex items-center gap-2 rounded-md border border-white/10 bg-white/[0.03] px-2 py-1">
+                <span className="h-2.5 w-2.5 rounded-full bg-[#7f8ea3]" />
+                Default
               </span>
-              <span className="flex items-center gap-2">
-                <span className="h-2.5 w-2.5 rounded-full bg-green-300/40" />
-                visited
+              <span className="flex items-center gap-2 rounded-md border border-emerald-300/30 bg-emerald-400/10 px-2 py-1">
+                <span className="h-2.5 w-2.5 rounded-full bg-emerald-300" />
+                Visited
               </span>
-              <span className="flex items-center gap-2">
-                <span className="h-2.5 w-2.5 rounded-full bg-yellow-400" />
-                current
+              <span className="flex items-center gap-2 rounded-md border border-yellow-300/35 bg-yellow-300/10 px-2 py-1">
+                <span className="h-2.5 w-2.5 rounded-full bg-yellow-300" />
+                Current
               </span>
-              <span className="flex items-center gap-2">
-                <span className="h-2.5 w-2.5 rounded-full bg-primary" />
-                match
+              <span className="flex items-center gap-2 rounded-md border border-rose-300/40 bg-rose-400/15 px-2 py-1">
+                <span className="h-2.5 w-2.5 rounded-full bg-rose-300" />
+                Match
               </span>
             </div>
           </div>
@@ -1158,7 +1206,7 @@ export default function ExplorerPage() {
                 onClick={() => setBottomTab("logs")}
                 className={`rounded-md border px-4 py-2 text-xs font-semibold uppercase tracking-[0.18em] transition ${
                   bottomTab === "logs"
-                    ? "border-emerald-400/40 bg-emerald-500/10 text-emerald-200"
+                    ? "border-primary/45 bg-primary/12 text-primary"
                     : "border-transparent text-[#8b949e] hover:border-white/10 hover:bg-white/5 hover:text-[#d7e2f0]"
                 }`}
               >
@@ -1169,7 +1217,7 @@ export default function ExplorerPage() {
                 onClick={() => setBottomTab("inspector")}
                 className={`rounded-md border px-4 py-2 text-xs font-semibold uppercase tracking-[0.18em] transition ${
                   bottomTab === "inspector"
-                    ? "border-cyan-400/40 bg-cyan-500/10 text-cyan-200"
+                    ? "border-primary/45 bg-primary/12 text-primary"
                     : "border-transparent text-[#8b949e] hover:border-white/10 hover:bg-white/5 hover:text-[#d7e2f0]"
                 }`}
               >
@@ -1177,7 +1225,7 @@ export default function ExplorerPage() {
               </button>
 
               <div className="ml-auto flex items-center gap-3 font-mono text-xs text-[#8b949e]">
-                <span>{bottomTab === "logs" ? "TERMINAL" : "NODE DETAILS"}</span>
+                <span>{bottomTab === "logs" ? `TERMINAL · ${algorithm}` : "NODE DETAILS"}</span>
                 <span className="rounded border border-white/10 px-2 py-1 text-[#c9d1d9]">
                   {bottomTab === "logs"
                     ? `${Math.min(animationIndex, logs.length)} / ${logs.length}`
@@ -1198,38 +1246,19 @@ export default function ExplorerPage() {
                     Run a traversal to see step-by-step logs.
                   </p>
                 ) : (
-                  <div className="space-y-3 text-[#c9d1d9]">
-                    <div className="flex items-center gap-4 rounded-lg border border-white/5 bg-white/[0.03] px-4 py-2 text-xs text-[#8b949e]">
-                      <span className="flex items-center gap-2">
-                        <span className="h-2.5 w-2.5 rounded-full bg-[#4b5563]" />
-                        default
-                      </span>
-                      <span className="flex items-center gap-2">
-                        <span className="h-2.5 w-2.5 rounded-full bg-emerald-400/80" />
-                        visited
-                      </span>
-                      <span className="flex items-center gap-2">
-                        <span className="h-2.5 w-2.5 rounded-full bg-yellow-400" />
-                        current
-                      </span>
-                      <span className="flex items-center gap-2">
-                        <span className="h-2.5 w-2.5 rounded-full bg-primary" />
-                        match
-                      </span>
-                    </div>
-
-                    <div className="overflow-hidden rounded-xl border border-white/5 bg-[#010409] shadow-[inset_0_1px_0_rgba(255,255,255,0.03)]">
-                      <div className="flex items-center justify-between border-b border-white/5 bg-[#0b0f14] px-4 py-3 text-xs uppercase tracking-[0.2em] text-[#8b949e]">
-                        <span>Traversal Logs</span>
+                  <div className="flex h-full min-h-0 flex-col gap-3 text-[#c9d1d9]">
+                    <div className="flex min-h-0 flex-1 flex-col overflow-hidden rounded-xl border border-white/5 bg-[#010409] shadow-[inset_0_1px_0_rgba(255,255,255,0.03)]">
+                    <div className="flex shrink-0 items-center justify-between border-b border-white/5 bg-[#0b0f14] px-4 py-3 text-xs uppercase tracking-[0.2em] text-[#8b949e]">
+                        <span>Traversal Logs · {activeModeLabel}</span>
                         <span>{Math.min(animationIndex, logs.length)} / {logs.length}</span>
                       </div>
 
-                      <div className="divide-y divide-white/[0.03]">
+                      <div className="min-h-0 flex-1 overflow-y-auto divide-y divide-white/[0.03]">
                         {visibleLogs.map((log) => {
                           const isCurrent = currentAnimatedNodeId === log.nodeId;
                           const isMatch = log.action === "match";
                           const lineTone = isMatch
-                            ? "text-emerald-300"
+                            ? "text-rose-300"
                             : isCurrent
                             ? "text-yellow-200"
                             : visitedIds.includes(log.nodeId)
@@ -1250,7 +1279,7 @@ export default function ExplorerPage() {
                               <span
                                 className={`font-semibold uppercase tracking-[0.18em] ${
                                   isMatch
-                                    ? "text-emerald-300"
+                                    ? "text-rose-300"
                                     : isCurrent
                                     ? "text-yellow-200"
                                     : "text-[#8b949e]"
