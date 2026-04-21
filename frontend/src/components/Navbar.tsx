@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import { motion } from "framer-motion";
 
 export default function Navbar() {
   const pathname = usePathname();
@@ -12,7 +13,10 @@ export default function Navbar() {
   ];
 
   return (
-    <header
+    <motion.header
+      initial={{ y: -40, opacity: 0 }}
+      animate={{ y: 0, opacity: 1 }}
+      transition={{ duration: 0.5, ease: "easeOut" }}
       className="sticky top-0 z-50 border-b"
       style={{
         borderBottomColor: "rgba(0, 229, 255, 0.1)",
@@ -31,9 +35,6 @@ export default function Navbar() {
             alt="Berry-Manuka logo"
             className="h-12 w-12 object-contain md:h-14 md:w-14"
           />
-          <span style={{ fontFamily: "Orbitron, sans-serif", color: "#e0f7ff" }}>
-            ilove
-          </span>
           <span
             style={{
               fontFamily: "Orbitron, sans-serif",
@@ -41,7 +42,7 @@ export default function Navbar() {
               textShadow: "0 0 16px rgba(0, 229, 255, 0.4)",
             }}
           >
-            Tree
+            Berry-Manuka
           </span>
         </Link>
 
@@ -76,7 +77,9 @@ export default function Navbar() {
                   }
                 }}
               >
-                {item.label}
+                <motion.span whileHover={{ scale: 1.08 }} whileTap={{ scale: 0.95 }}>
+                  {item.label}
+                </motion.span>
                 {active && (
                   <span
                     className="absolute -bottom-1 left-1/2 h-[2px] w-6 -translate-x-1/2 rounded-full"
@@ -91,6 +94,6 @@ export default function Navbar() {
           })}
         </nav>
       </div>
-    </header>
+    </motion.header>
   );
 }

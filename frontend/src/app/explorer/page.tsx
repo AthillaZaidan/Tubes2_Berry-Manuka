@@ -1,6 +1,7 @@
 "use client";
 
 import Starfield from "@/components/Starfield";
+import { motion } from "framer-motion";
 import { useEffect, useMemo, useRef, useState } from "react";
 
 type DOMNode = {
@@ -544,9 +545,11 @@ function NodePill({
       : "border-[rgba(0,229,255,0.25)] bg-[rgba(10,20,35,0.88)] text-[#e0f7ff] hover:border-[rgba(0,229,255,0.5)]";
 
   return (
-    <button
+    <motion.button
       type="button"
       onClick={onClick}
+      whileHover={{ scale: 1.06, y: -2 }}
+      whileTap={{ scale: 0.95 }}
       className={`min-w-[86px] rounded-xl border px-4 py-2 text-xs font-mono font-semibold tracking-[0.03em] transition-all duration-300 ${
         selected ? "ring-2 ring-[#00e5ff]" : ""
       } ${stateClass}`}
@@ -554,7 +557,7 @@ function NodePill({
       {"<"}
       {node.tag}
       {">"}
-    </button>
+    </motion.button>
   );
 }
 
@@ -912,7 +915,12 @@ export default function ExplorerPage() {
   return (
     <section className="min-h-[calc(100vh-84px)] h-[calc(100vh+320px)] overflow-hidden">
       <div className="grid h-full grid-cols-[380px_minmax(0,1fr)]">
-        <aside className="flex h-full flex-col border-r border-[rgba(0,229,255,0.12)] bg-[rgba(6,12,22,0.8)] backdrop-blur-md">
+        <motion.aside
+          initial={{ x: -40, opacity: 0 }}
+          animate={{ x: 0, opacity: 1 }}
+          transition={{ duration: 0.5, ease: "easeOut" }}
+          className="flex h-full flex-col border-r border-[rgba(0,229,255,0.12)] bg-[rgba(6,12,22,0.8)] backdrop-blur-md"
+        >
           <div className="flex-1 overflow-y-auto px-6 py-6">
             <div className="mb-8">
               <div className="mb-4">
@@ -968,9 +976,11 @@ export default function ExplorerPage() {
                 />
               )}
 
-              <button
+              <motion.button
                 onClick={handleParseHtml}
                 disabled={isParsing}
+                whileTap={{ scale: 0.97 }}
+                whileHover={{ scale: 1.02 }}
                 className={`${sidePrimaryButtonClass} ${
                   isParsing
                     ? "cursor-not-allowed border-[rgba(0,229,255,0.1)] bg-[rgba(6,12,22,0.6)] text-[#6b8fa3]"
@@ -978,7 +988,7 @@ export default function ExplorerPage() {
                 }`}
               >
                 {isParsing ? "Parsing..." : "Parse HTML"}
-              </button>
+              </motion.button>
 
               {parseError && <p className="mt-3 text-sm text-red-400">{parseError}</p>}
             </div>
@@ -1038,9 +1048,11 @@ export default function ExplorerPage() {
                 className="mb-5 w-full rounded-2xl border border-[rgba(0,229,255,0.2)] bg-[rgba(3,5,8,0.6)] px-4 py-3 text-sm text-[#e0f7ff] outline-none focus:border-[#00e5ff] focus:shadow-[0_0_12px_rgba(0,229,255,0.2)]"
               />
 
-              <button
+              <motion.button
                 onClick={handleRunTraversal}
                 disabled={!hasParsed || isTraversing}
+                whileTap={{ scale: 0.97 }}
+                whileHover={{ scale: 1.02 }}
                 className={`flex w-full items-center justify-center gap-3 rounded-2xl border px-5 py-4 text-lg font-semibold transition-all duration-200 ${
                   !hasParsed || isTraversing
                     ? "cursor-not-allowed border-[rgba(0,229,255,0.1)] bg-[rgba(6,12,22,0.6)] text-[#6b8fa3]"
@@ -1049,7 +1061,7 @@ export default function ExplorerPage() {
               >
         
                 {isTraversing ? "Running..." : "Run Traversal"}
-              </button>
+              </motion.button>
 
               {!hasParsed && !traversalError && (
                 <p className="mt-3 text-sm text-[#6b8fa3]">
@@ -1060,10 +1072,15 @@ export default function ExplorerPage() {
               {traversalError && <p className="mt-3 text-sm text-red-400">{traversalError}</p>}
             </div>
           </div>
-        </aside>
+        </motion.aside>
 
         <div className="grid h-full grid-rows-[82px_minmax(0,1fr)_clamp(320px,36vh,460px)]">
-          <div className="flex items-center justify-between border-b border-[rgba(0,229,255,0.12)] bg-[rgba(3,5,8,0.6)] px-6 backdrop-blur-sm">
+          <motion.div
+            initial={{ y: -20, opacity: 0 }}
+            animate={{ y: 0, opacity: 1 }}
+            transition={{ duration: 0.4, delay: 0.1 }}
+            className="flex items-center justify-between border-b border-[rgba(0,229,255,0.12)] bg-[rgba(3,5,8,0.6)] px-6 backdrop-blur-sm"
+          >
             <div className="flex items-center gap-5">
               <div className="flex items-center gap-2 rounded-xl border border-[rgba(0,229,255,0.25)] bg-[rgba(3,5,8,0.5)] p-1">
                 <button
@@ -1154,7 +1171,7 @@ export default function ExplorerPage() {
               </span>
               <span className="text-[#ff9e00]">2.8 ms</span>
             </div>
-          </div>
+          </motion.div>
 
           <div className="relative overflow-auto border-b border-[rgba(0,229,255,0.08)] bg-[#030508]">
             <div className="grid-bg absolute inset-0 opacity-70" />
@@ -1171,7 +1188,12 @@ export default function ExplorerPage() {
               </button>
             </div>
 
-            <div className="relative h-full w-full border-[rgba(0,229,255,0.08)] bg-[rgba(3,5,8,0.3)]">
+            <motion.div
+              initial={{ opacity: 0, scale: 0.98 }}
+              animate={{ opacity: 1, scale: 1 }}
+              transition={{ duration: 0.5, delay: 0.2 }}
+              className="relative h-full w-full border-[rgba(0,229,255,0.08)] bg-[rgba(3,5,8,0.3)]"
+            >
               {tree ? (
                 <TreeCanvas
                   tree={tree}
@@ -1190,7 +1212,7 @@ export default function ExplorerPage() {
                   Parse HTML terlebih dahulu untuk melihat DOM tree.
                 </div>
               )}
-            </div>
+            </motion.div>
 
             <div className="absolute bottom-4 left-4 flex items-center gap-2 rounded-xl border border-[rgba(0,229,255,0.15)] bg-[rgba(6,12,22,0.8)] px-3 py-2 text-xs font-semibold text-[#e0f7ff] shadow-[0_10px_30px_rgba(0,0,0,0.3)] backdrop-blur-md">
               <span className="flex items-center gap-2 rounded-md border border-[rgba(0,229,255,0.1)] bg-[rgba(0,229,255,0.04)] px-2 py-1">
@@ -1212,7 +1234,12 @@ export default function ExplorerPage() {
             </div>
           </div>
 
-          <div className="flex min-h-0 flex-col overflow-hidden border-t border-[rgba(0,229,255,0.12)] bg-[rgba(6,12,22,0.9)]">
+          <motion.div
+            initial={{ y: 30, opacity: 0 }}
+            animate={{ y: 0, opacity: 1 }}
+            transition={{ duration: 0.4, delay: 0.3 }}
+            className="flex min-h-0 flex-col overflow-hidden border-t border-[rgba(0,229,255,0.12)] bg-[rgba(6,12,22,0.9)]"
+          >
             <div className="flex items-center gap-2 border-b border-[rgba(0,229,255,0.1)] bg-[rgba(3,5,8,0.7)] px-4 py-3">
               <button
                 onClick={() => setBottomTab("logs")}
@@ -1383,7 +1410,7 @@ export default function ExplorerPage() {
                 </div>
               )}
             </div>
-          </div>
+          </motion.div>
         </div>
       </div>
     </section>
