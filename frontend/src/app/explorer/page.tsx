@@ -1,5 +1,6 @@
 "use client";
 
+import Starfield from "@/components/Starfield";
 import { useEffect, useMemo, useRef, useState } from "react";
 
 type DOMNode = {
@@ -535,19 +536,19 @@ function NodePill({
 }) {
   const stateClass =
     state === "match"
-      ? "border-rose-300/70 bg-rose-400/18 text-rose-100 shadow-[0_0_24px_rgba(251,113,133,0.35)]"
+      ? "border-[rgba(255,158,0,0.9)] bg-[rgba(255,158,0,0.15)] text-[#e0f7ff] shadow-[0_0_24px_rgba(255,158,0,0.5)]"
       : state === "current"
-      ? "border-yellow-300 bg-yellow-300/20 text-yellow-100 shadow-[0_0_20px_rgba(250,204,21,0.35)]"
+      ? "border-[rgba(255,215,0,0.7)] bg-[rgba(255,215,0,0.12)] text-[#ffd700] animate-node-pulse"
       : state === "visited"
-      ? "border-emerald-300/70 bg-emerald-300/14 text-emerald-100 shadow-[0_0_16px_rgba(16,185,129,0.22)]"
-      : "border-emerald-200/25 bg-[#0f1722]/88 text-[#deefe7] hover:border-emerald-200/60 hover:bg-[#122132] hover:text-white";
+      ? "border-[rgba(0,255,200,0.5)] bg-[rgba(0,255,200,0.08)] text-[#00ffc8] shadow-[0_0_12px_rgba(0,255,200,0.25)]"
+      : "border-[rgba(0,229,255,0.25)] bg-[rgba(10,20,35,0.88)] text-[#e0f7ff] hover:border-[rgba(0,229,255,0.5)]";
 
   return (
     <button
       type="button"
       onClick={onClick}
       className={`min-w-[86px] rounded-xl border px-4 py-2 text-xs font-mono font-semibold tracking-[0.03em] transition-all duration-300 ${
-        selected ? "ring-2 ring-primary/80 ring-offset-1 ring-offset-[#08101b]" : ""
+        selected ? "ring-2 ring-[#00e5ff]" : ""
       } ${stateClass}`}
     >
       {"<"}
@@ -623,7 +624,7 @@ function TreeCanvas({
   return (
     <div
       ref={viewportRef}
-      className="h-full w-full overflow-auto bg-[radial-gradient(120%_100%_at_50%_0%,rgba(16,185,129,0.14)_0%,rgba(6,18,28,0.92)_45%,rgba(5,12,20,1)_100%)]"
+      className="h-full w-full overflow-auto bg-[radial-gradient(120%_100%_at_50%_0%,rgba(0,229,255,0.12)_0%,rgba(3,5,8,0.95)_45%,rgba(3,5,8,1)_100%)]"
     >
       <div className="flex min-h-full min-w-full items-start justify-center">
         <div
@@ -642,13 +643,13 @@ function TreeCanvas({
                 y1={y}
                 x2={layout.width - 40}
                 y2={y}
-                stroke="rgba(165, 214, 196, 0.13)"
-                strokeDasharray="6 10"
+                stroke="rgba(0, 229, 255, 0.08)"
+                strokeDasharray="4 8"
               />
               <text
                 x={16}
                 y={y + 4}
-                fill="rgba(190, 225, 210, 0.52)"
+                fill="rgba(0, 229, 255, 0.35)"
                 fontSize={10}
                 style={{ letterSpacing: "0.12em" }}
               >
@@ -674,10 +675,10 @@ function TreeCanvas({
                     key={`${edge.parentId}-${edge.childId}`}
                     d={`M ${startX} ${startY} C ${startX} ${controlY}, ${endX} ${controlY}, ${endX} ${endY}`}
                     fill="none"
-                    stroke={isActive ? "hsl(var(--primary))" : "rgba(87, 229, 171, 0.62)"}
+                    stroke={isActive ? "#00e5ff" : "rgba(0, 229, 255, 0.35)"}
                     strokeWidth={isActive ? 2.8 : 2}
                     strokeLinecap="round"
-                    className={isActive ? "drop-shadow-[0_0_10px_hsl(var(--primary)/0.58)]" : ""}
+                    className={isActive ? "animate-edge-pulse" : ""}
                   />
                 );
               })}
@@ -789,9 +790,9 @@ export default function ExplorerPage() {
   const sidePrimaryButtonClass =
     "mt-4 w-full rounded-2xl border px-4 py-4 text-lg font-semibold transition-all duration-200";
   const calmActiveButtonClass =
-    "border-blue-300/45 bg-blue-400/12 text-blue-200";
+    "border-[rgba(0,229,255,0.7)] bg-[rgba(0,229,255,0.12)] text-[#00e5ff] shadow-[0_0_12px_rgba(0,229,255,0.25)]";
   const calmInactiveButtonClass =
-    "border-white/10 bg-[#0b1220]/75 text-[#a8b4c3] hover:border-blue-300/30 hover:bg-[#101b2d] hover:text-[#dbeafe]";
+    "border-[rgba(0,229,255,0.15)] bg-[rgba(0,229,255,0.04)] text-[#6b8fa3] hover:border-[rgba(0,229,255,0.35)] hover:bg-[rgba(0,229,255,0.08)] hover:text-[#e0f7ff]";
 
   useEffect(() => {
     if (!animationRunning) return;
@@ -911,12 +912,15 @@ export default function ExplorerPage() {
   return (
     <section className="min-h-[calc(100vh-84px)] h-[calc(100vh+320px)] overflow-hidden">
       <div className="grid h-full grid-cols-[380px_minmax(0,1fr)]">
-        <aside className="flex h-full flex-col border-r border-border bg-background/80">
+        <aside className="flex h-full flex-col border-r border-[rgba(0,229,255,0.12)] bg-[rgba(6,12,22,0.8)] backdrop-blur-md">
           <div className="flex-1 overflow-y-auto px-6 py-6">
             <div className="mb-8">
-              <p className="mb-4 text-xs font-semibold uppercase tracking-[0.2em] text-muted-foreground">
-                Source
-              </p>
+              <div className="mb-4">
+                <p className="text-xs font-semibold uppercase tracking-[0.2em] text-[#00e5ff]" style={{ fontFamily: "'Exo 2', sans-serif" }}>
+                  Source
+                </p>
+                <div className="mt-1 h-px w-8 bg-[#00e5ff] shadow-[0_0_8px_rgba(0,229,255,0.6)]" />
+              </div>
 
               <div className="mb-4 flex gap-3">
                 <button
@@ -948,7 +952,7 @@ export default function ExplorerPage() {
                     setSourceInput(event.target.value);
                     setHasParsed(false);
                   }}
-                  className="w-full rounded-2xl border border-border bg-card/40 px-4 py-3 text-sm text-foreground outline-none placeholder:text-muted-foreground focus:border-primary"
+                  className="w-full rounded-2xl border border-[rgba(0,229,255,0.2)] bg-[rgba(3,5,8,0.6)] px-4 py-3 text-sm text-[#e0f7ff] outline-none placeholder:text-[#6b8fa3] focus:border-[#00e5ff] focus:shadow-[0_0_12px_rgba(0,229,255,0.2)]"
                   placeholder="https://example.com"
                 />
               ) : (
@@ -959,7 +963,7 @@ export default function ExplorerPage() {
                     setSourceInput(event.target.value);
                     setHasParsed(false);
                   }}
-                  className="w-full resize-none rounded-2xl border border-border bg-card/40 px-4 py-4 text-sm text-foreground outline-none placeholder:text-muted-foreground focus:border-primary"
+                  className="w-full resize-none rounded-2xl border border-[rgba(0,229,255,0.2)] bg-[rgba(3,5,8,0.6)] px-4 py-4 text-sm text-[#e0f7ff] outline-none placeholder:text-[#6b8fa3] focus:border-[#00e5ff] focus:shadow-[0_0_12px_rgba(0,229,255,0.2)]"
                   placeholder="<html><body><div>Hello</div></body></html>"
                 />
               )}
@@ -969,8 +973,8 @@ export default function ExplorerPage() {
                 disabled={isParsing}
                 className={`${sidePrimaryButtonClass} ${
                   isParsing
-                    ? "cursor-not-allowed border-white/10 bg-[#1a2534]/80 text-[#8fa0b6]"
-                    : "border-emerald-300/45 bg-emerald-400/12 text-emerald-200 hover:border-emerald-300/65 hover:bg-emerald-400/18"
+                    ? "cursor-not-allowed border-[rgba(0,229,255,0.1)] bg-[rgba(6,12,22,0.6)] text-[#6b8fa3]"
+                    : "btn-primary animate-shimmer"
                 }`}
               >
                 {isParsing ? "Parsing..." : "Parse HTML"}
@@ -980,23 +984,29 @@ export default function ExplorerPage() {
             </div>
 
             <div className="mb-8">
-              <p className="mb-4 text-xs font-semibold uppercase tracking-[0.2em] text-muted-foreground">
-                Traversal
-              </p>
+              <div className="mb-4">
+                <p className="text-xs font-semibold uppercase tracking-[0.2em] text-[#00e5ff]" style={{ fontFamily: "'Exo 2', sans-serif" }}>
+                  Traversal
+                </p>
+                <div className="mt-1 h-px w-8 bg-[#00e5ff] shadow-[0_0_8px_rgba(0,229,255,0.6)]" />
+              </div>
 
-              <label className="mb-2 block text-sm text-muted-foreground">CSS selector</label>
+              <label className="mb-2 block text-sm text-[#6b8fa3]">CSS selector</label>
               <input
                 value={selectorInput}
                 onChange={(event) => setSelectorInput(event.target.value)}
-                className="w-full rounded-2xl border border-border bg-card/40 px-4 py-3 text-sm text-foreground outline-none placeholder:text-muted-foreground focus:border-primary"
+                className="w-full rounded-2xl border border-[rgba(0,229,255,0.2)] bg-[rgba(3,5,8,0.6)] px-4 py-3 text-sm text-[#e0f7ff] outline-none placeholder:text-[#6b8fa3] focus:border-[#00e5ff] focus:shadow-[0_0_12px_rgba(0,229,255,0.2)]"
                 placeholder=".active"
               />
             </div>
 
             <div>
-              <p className="mb-4 text-xs font-semibold uppercase tracking-[0.2em] text-muted-foreground">
-                Result
-              </p>
+              <div className="mb-4">
+                <p className="text-xs font-semibold uppercase tracking-[0.2em] text-[#00e5ff]" style={{ fontFamily: "'Exo 2', sans-serif" }}>
+                  Result
+                </p>
+                <div className="mt-1 h-px w-8 bg-[#00e5ff] shadow-[0_0_8px_rgba(0,229,255,0.6)]" />
+              </div>
 
               <div className="mb-4 flex gap-3">
                 <button
@@ -1025,7 +1035,7 @@ export default function ExplorerPage() {
                 value={topNInput}
                 onChange={(event) => setTopNInput(event.target.value)}
                 inputMode="numeric"
-                className="mb-5 w-full rounded-2xl border border-border bg-card/40 px-4 py-3 text-sm text-foreground outline-none focus:border-primary"
+                className="mb-5 w-full rounded-2xl border border-[rgba(0,229,255,0.2)] bg-[rgba(3,5,8,0.6)] px-4 py-3 text-sm text-[#e0f7ff] outline-none focus:border-[#00e5ff] focus:shadow-[0_0_12px_rgba(0,229,255,0.2)]"
               />
 
               <button
@@ -1033,8 +1043,8 @@ export default function ExplorerPage() {
                 disabled={!hasParsed || isTraversing}
                 className={`flex w-full items-center justify-center gap-3 rounded-2xl border px-5 py-4 text-lg font-semibold transition-all duration-200 ${
                   !hasParsed || isTraversing
-                    ? "cursor-not-allowed border-white/10 bg-[#1a2534]/80 text-[#8fa0b6]"
-                    : "border-emerald-300/45 bg-emerald-400/12 text-emerald-200 hover:border-emerald-300/65 hover:bg-emerald-400/18"
+                    ? "cursor-not-allowed border-[rgba(0,229,255,0.1)] bg-[rgba(6,12,22,0.6)] text-[#6b8fa3]"
+                    : "btn-primary"
                 }`}
               >
         
@@ -1042,7 +1052,7 @@ export default function ExplorerPage() {
               </button>
 
               {!hasParsed && !traversalError && (
-                <p className="mt-3 text-sm text-muted-foreground">
+                <p className="mt-3 text-sm text-[#6b8fa3]">
                   Parse HTML terlebih dahulu untuk mengaktifkan traversal.
                 </p>
               )}
@@ -1053,15 +1063,15 @@ export default function ExplorerPage() {
         </aside>
 
         <div className="grid h-full grid-rows-[82px_minmax(0,1fr)_clamp(320px,36vh,460px)]">
-          <div className="flex items-center justify-between border-b border-border px-6">
+          <div className="flex items-center justify-between border-b border-[rgba(0,229,255,0.12)] bg-[rgba(3,5,8,0.6)] px-6 backdrop-blur-sm">
             <div className="flex items-center gap-5">
-              <div className="flex items-center gap-2 rounded-xl border border-border bg-card/40 p-1">
+              <div className="flex items-center gap-2 rounded-xl border border-[rgba(0,229,255,0.25)] bg-[rgba(3,5,8,0.5)] p-1">
                 <button
                   onClick={() => setAlgorithm("BFS")}
                   className={`rounded-lg px-6 py-2.5 text-sm font-semibold transition ${
                     algorithm === "BFS"
-                      ? "bg-cyan-500/20 text-cyan-100"
-                      : "text-muted-foreground hover:bg-cyan-500/10 hover:text-cyan-200"
+                      ? "bg-[#00e5ff] text-[#030508]"
+                      : "text-[#6b8fa3] hover:bg-[rgba(0,229,255,0.1)] hover:text-[#00e5ff]"
                   }`}
                 >
                   BFS
@@ -1070,35 +1080,35 @@ export default function ExplorerPage() {
                   onClick={() => setAlgorithm("DFS")}
                   className={`rounded-lg px-6 py-2.5 text-sm font-semibold transition ${
                     algorithm === "DFS"
-                      ? "bg-fuchsia-500/20 text-fuchsia-100"
-                      : "text-muted-foreground hover:bg-fuchsia-500/10 hover:text-fuchsia-200"
+                      ? "bg-[#00e5ff] text-[#030508]"
+                      : "text-[#6b8fa3] hover:bg-[rgba(0,229,255,0.1)] hover:text-[#00e5ff]"
                   }`}
                 >
                   DFS
                 </button>
               </div>
 
-              <div className="flex items-center gap-3 rounded-xl border border-border bg-card/40 px-4 py-3">
+              <div className="flex items-center gap-3 rounded-xl border border-[rgba(0,229,255,0.25)] bg-[rgba(3,5,8,0.5)] px-4 py-3">
                 <button
                   onClick={() => {
                     setAnimationRunning(false);
                     setAnimationIndex(0);
                     setIsTraversing(false);
                   }}
-                  className="rounded-md px-2 py-1 text-muted-foreground transition hover:bg-primary/5 hover:text-primary"
+                  className="rounded-md px-2 py-1 text-[#6b8fa3] transition hover:bg-[rgba(0,229,255,0.1)] hover:text-[#00e5ff]"
                 >
                   Reset
                 </button>
                 <button
                   onClick={() => setAnimationRunning((prev) => !prev)}
-                  className="rounded-md bg-primary/20 px-3 py-1 text-primary transition hover:bg-primary/30"
+                  className="rounded-md bg-[#00e5ff] px-3 py-1 text-[#030508] transition hover:bg-[#00c2d6]"
                 >
                   {animationRunning ? "Pause" : "Play"}
                 </button>
 
-                <div className="mx-2 h-6 w-px bg-border" />
+                <div className="mx-2 h-6 w-px bg-[rgba(0,229,255,0.2)]" />
 
-                <span className="text-xs uppercase tracking-[0.18em] text-muted-foreground">
+                <span className="text-xs uppercase tracking-[0.18em] text-[#6b8fa3]">
                   Speed
                 </span>
 
@@ -1109,15 +1119,15 @@ export default function ExplorerPage() {
                   step={50}
                   value={speed}
                   onChange={(event) => setSpeed(Number(event.target.value))}
-                  className="accent-primary"
+                  className="accent-[#00e5ff]"
                 />
 
-                <span className="text-sm text-muted-foreground">{speed}ms</span>
+                <span className="text-sm font-mono text-[#00e5ff]">{speed}ms</span>
                 <span
                   className={`rounded-md border px-2 py-1 text-xs font-semibold tracking-[0.08em] ${
                     algorithm === "BFS"
-                      ? "border-cyan-300/40 bg-cyan-400/10 text-cyan-200"
-                      : "border-fuchsia-300/40 bg-fuchsia-400/10 text-fuchsia-200"
+                      ? "border-[rgba(0,229,255,0.4)] bg-[rgba(0,229,255,0.12)] text-[#00e5ff]"
+                      : "border-[rgba(0,229,255,0.4)] bg-[rgba(0,229,255,0.12)] text-[#00e5ff]"
                   }`}
                 >
                   MODE {algorithm}
@@ -1125,41 +1135,43 @@ export default function ExplorerPage() {
               </div>
             </div>
 
-            <div className="flex items-center gap-6 text-sm">
-              <span className="text-foreground">
-                <strong>{totalNodes}</strong>{" "}
-                <span className="text-muted-foreground">nodes</span>
+            <div className="flex items-center gap-6 text-sm font-mono">
+              <span>
+                <strong className="text-[#00e5ff]">{totalNodes}</strong>{" "}
+                <span className="text-[10px] uppercase tracking-wider text-[#6b8fa3]">nodes</span>
               </span>
-              <span className="text-foreground">
-                <strong>{maxDepth}</strong>{" "}
-                <span className="text-muted-foreground">depth</span>
+              <span>
+                <strong className="text-[#00e5ff]">{maxDepth}</strong>{" "}
+                <span className="text-[10px] uppercase tracking-wider text-[#6b8fa3]">depth</span>
               </span>
-              <span className="text-foreground">
-                <strong>{visitedCount}</strong>{" "}
-                <span className="text-muted-foreground">visited</span>
+              <span>
+                <strong className="text-[#00e5ff]">{visitedCount}</strong>{" "}
+                <span className="text-[10px] uppercase tracking-wider text-[#6b8fa3]">visited</span>
               </span>
-              <span className="text-foreground">
-                <strong>{matchCount}</strong>{" "}
-                <span className="text-muted-foreground">matches</span>
+              <span>
+                <strong className="text-[#00e5ff]">{matchCount}</strong>{" "}
+                <span className="text-[10px] uppercase tracking-wider text-[#6b8fa3]">matches</span>
               </span>
-              <span className="text-muted-foreground">2.8 ms</span>
+              <span className="text-[#ff9e00]">2.8 ms</span>
             </div>
           </div>
 
-          <div className="relative overflow-auto border-b border-border bg-[#071017]">
+          <div className="relative overflow-auto border-b border-[rgba(0,229,255,0.08)] bg-[#030508]">
             <div className="grid-bg absolute inset-0 opacity-70" />
+            <Starfield className="z-0" />
+            <div className="radial-glow pointer-events-none absolute inset-0" />
 
-            <div className="absolute right-6 top-6 z-20 flex items-center gap-4 rounded-xl border border-border bg-card/50 px-5 py-3 text-sm text-muted-foreground backdrop-blur-sm">
-              <button onClick={handleZoomIn} className="rounded-md px-1 transition hover:text-primary">
+            <div className="absolute right-6 top-6 z-20 flex items-center gap-4 rounded-xl border border-[rgba(0,229,255,0.15)] bg-[rgba(6,12,22,0.7)] px-5 py-3 text-sm text-[#6b8fa3] backdrop-blur-md">
+              <button onClick={handleZoomIn} className="rounded-md px-1 transition hover:text-[#00e5ff]">
                 +
               </button>
               <span>{Math.round(zoom * 100)}%</span>
-              <button onClick={handleZoomOut} className="rounded-md px-1 transition hover:text-primary">
+              <button onClick={handleZoomOut} className="rounded-md px-1 transition hover:text-[#00e5ff]">
                 -
               </button>
             </div>
 
-            <div className="relative h-full w-full">
+            <div className="relative h-full w-full border-[rgba(0,229,255,0.08)] bg-[rgba(3,5,8,0.3)]">
               {tree ? (
                 <TreeCanvas
                   tree={tree}
@@ -1174,40 +1186,40 @@ export default function ExplorerPage() {
                   zoom={zoom}
                 />
               ) : (
-                <div className="pt-10 text-muted-foreground">
+                <div className="pt-10 text-[#6b8fa3]">
                   Parse HTML terlebih dahulu untuk melihat DOM tree.
                 </div>
               )}
             </div>
 
-            <div className="absolute bottom-4 left-4 flex items-center gap-2 rounded-xl border border-white/15 bg-[#0b111b]/90 px-3 py-2 text-xs font-semibold text-[#d9e3ef] shadow-[0_10px_30px_rgba(0,0,0,0.3)] backdrop-blur-sm">
-              <span className="flex items-center gap-2 rounded-md border border-white/10 bg-white/[0.03] px-2 py-1">
-                <span className="h-2.5 w-2.5 rounded-full bg-[#7f8ea3]" />
+            <div className="absolute bottom-4 left-4 flex items-center gap-2 rounded-xl border border-[rgba(0,229,255,0.15)] bg-[rgba(6,12,22,0.8)] px-3 py-2 text-xs font-semibold text-[#e0f7ff] shadow-[0_10px_30px_rgba(0,0,0,0.3)] backdrop-blur-md">
+              <span className="flex items-center gap-2 rounded-md border border-[rgba(0,229,255,0.1)] bg-[rgba(0,229,255,0.04)] px-2 py-1">
+                <span className="h-2.5 w-2.5 rounded-full bg-[#4b5563]" />
                 Default
               </span>
-              <span className="flex items-center gap-2 rounded-md border border-emerald-300/30 bg-emerald-400/10 px-2 py-1">
-                <span className="h-2.5 w-2.5 rounded-full bg-emerald-300" />
+              <span className="flex items-center gap-2 rounded-md border border-[rgba(0,255,200,0.3)] bg-[rgba(0,255,200,0.08)] px-2 py-1">
+                <span className="h-2.5 w-2.5 rounded-full bg-[#00ffc8]" />
                 Visited
               </span>
-              <span className="flex items-center gap-2 rounded-md border border-yellow-300/35 bg-yellow-300/10 px-2 py-1">
-                <span className="h-2.5 w-2.5 rounded-full bg-yellow-300" />
+              <span className="flex items-center gap-2 rounded-md border border-[rgba(255,215,0,0.3)] bg-[rgba(255,215,0,0.08)] px-2 py-1">
+                <span className="h-2.5 w-2.5 rounded-full bg-[#ffd700]" />
                 Current
               </span>
-              <span className="flex items-center gap-2 rounded-md border border-rose-300/40 bg-rose-400/15 px-2 py-1">
-                <span className="h-2.5 w-2.5 rounded-full bg-rose-300" />
+              <span className="flex items-center gap-2 rounded-md border border-[rgba(255,158,0,0.3)] bg-[rgba(255,158,0,0.1)] px-2 py-1">
+                <span className="h-2.5 w-2.5 rounded-full bg-[#ff9e00]" />
                 Match
               </span>
             </div>
           </div>
 
-          <div className="flex min-h-0 flex-col overflow-hidden border-t border-white/5 bg-[#111317]">
-            <div className="flex items-center gap-2 border-b border-white/5 bg-[#181b20] px-4 py-3">
+          <div className="flex min-h-0 flex-col overflow-hidden border-t border-[rgba(0,229,255,0.12)] bg-[rgba(6,12,22,0.9)]">
+            <div className="flex items-center gap-2 border-b border-[rgba(0,229,255,0.1)] bg-[rgba(3,5,8,0.7)] px-4 py-3">
               <button
                 onClick={() => setBottomTab("logs")}
                 className={`rounded-md border px-4 py-2 text-xs font-semibold uppercase tracking-[0.18em] transition ${
                   bottomTab === "logs"
-                    ? "border-primary/45 bg-primary/12 text-primary"
-                    : "border-transparent text-[#8b949e] hover:border-white/10 hover:bg-white/5 hover:text-[#d7e2f0]"
+                    ? "border-[rgba(0,255,200,0.45)] bg-[rgba(0,255,200,0.12)] text-[#00ffc8]"
+                    : "border-transparent text-[#6b8fa3] hover:border-[rgba(0,229,255,0.15)] hover:bg-[rgba(0,229,255,0.05)] hover:text-[#e0f7ff]"
                 }`}
               >
                 Traversal Logs
@@ -1217,16 +1229,16 @@ export default function ExplorerPage() {
                 onClick={() => setBottomTab("inspector")}
                 className={`rounded-md border px-4 py-2 text-xs font-semibold uppercase tracking-[0.18em] transition ${
                   bottomTab === "inspector"
-                    ? "border-primary/45 bg-primary/12 text-primary"
-                    : "border-transparent text-[#8b949e] hover:border-white/10 hover:bg-white/5 hover:text-[#d7e2f0]"
+                    ? "border-[rgba(0,229,255,0.45)] bg-[rgba(0,229,255,0.12)] text-[#00e5ff]"
+                    : "border-transparent text-[#6b8fa3] hover:border-[rgba(0,229,255,0.15)] hover:bg-[rgba(0,229,255,0.05)] hover:text-[#e0f7ff]"
                 }`}
               >
                 Inspector
               </button>
 
-              <div className="ml-auto flex items-center gap-3 font-mono text-xs text-[#8b949e]">
+              <div className="ml-auto flex items-center gap-3 font-mono text-xs text-[#6b8fa3]">
                 <span>{bottomTab === "logs" ? `TERMINAL · ${algorithm}` : "NODE DETAILS"}</span>
-                <span className="rounded border border-white/10 px-2 py-1 text-[#c9d1d9]">
+                <span className="rounded border border-[rgba(0,229,255,0.15)] px-2 py-1 text-[#00e5ff]">
                   {bottomTab === "logs"
                     ? `${Math.min(animationIndex, logs.length)} / ${logs.length}`
                     : selectedNode
@@ -1238,17 +1250,17 @@ export default function ExplorerPage() {
 
             <div
               ref={logViewportRef}
-              className="min-h-0 flex-1 overflow-auto bg-[#0d1117] px-4 py-4 font-mono text-sm"
+              className="min-h-0 flex-1 overflow-auto bg-[#020408] px-4 py-4 font-mono text-sm"
             >
               {bottomTab === "logs" ? (
                 logs.length === 0 ? (
-                  <p className="rounded-lg border border-dashed border-white/10 px-4 py-6 text-[#8b949e]">
+                  <p className="rounded-lg border border-dashed border-[rgba(0,229,255,0.15)] px-4 py-6 text-[#6b8fa3]">
                     Run a traversal to see step-by-step logs.
                   </p>
                 ) : (
-                  <div className="flex h-full min-h-0 flex-col gap-3 text-[#c9d1d9]">
-                    <div className="flex min-h-0 flex-1 flex-col overflow-hidden rounded-xl border border-white/5 bg-[#010409] shadow-[inset_0_1px_0_rgba(255,255,255,0.03)]">
-                    <div className="flex shrink-0 items-center justify-between border-b border-white/5 bg-[#0b0f14] px-4 py-3 text-xs uppercase tracking-[0.2em] text-[#8b949e]">
+                  <div className="flex h-full min-h-0 flex-col gap-3 text-[#e0f7ff]">
+                    <div className="flex min-h-0 flex-1 flex-col overflow-hidden rounded-xl border border-[rgba(0,229,255,0.08)] bg-[#010409] shadow-[inset_0_1px_0_rgba(255,255,255,0.03)]">
+                    <div className="flex shrink-0 items-center justify-between border-b border-[rgba(0,229,255,0.08)] bg-[rgba(0,229,255,0.06)] px-4 py-3 text-xs uppercase tracking-[0.2em] text-[rgba(0,229,255,0.5)]">
                         <span>Traversal Logs · {activeModeLabel}</span>
                         <span>{Math.min(animationIndex, logs.length)} / {logs.length}</span>
                       </div>
@@ -1258,12 +1270,12 @@ export default function ExplorerPage() {
                           const isCurrent = currentAnimatedNodeId === log.nodeId;
                           const isMatch = log.action === "match";
                           const lineTone = isMatch
-                            ? "text-rose-300"
+                            ? "text-[#ff9e00]"
                             : isCurrent
-                            ? "text-yellow-200"
+                            ? "text-[#ffd700]"
                             : visitedIds.includes(log.nodeId)
-                            ? "text-[#d7e2f0]"
-                            : "text-[#8b949e]";
+                            ? "text-[#00ffc8]"
+                            : "text-[#6b8fa3]";
 
                           return (
                             <button
@@ -1273,16 +1285,16 @@ export default function ExplorerPage() {
                                 setSelectedNodeId(log.nodeId);
                                 setBottomTab("inspector");
                               }}
-                              className={`grid w-full grid-cols-[56px_76px_minmax(0,1fr)] items-center gap-4 px-4 py-2 text-left transition hover:bg-white/[0.04] ${lineTone}`}
+                              className={`grid w-full grid-cols-[56px_76px_minmax(0,1fr)] items-center gap-4 px-4 py-2 text-left transition hover:bg-[rgba(0,229,255,0.04)] ${lineTone}`}
                             >
-                              <span className="text-[#6e7681]">{String(log.step).padStart(3, "0")}</span>
+                              <span className="text-[#4b5563]">{String(log.step).padStart(3, "0")}</span>
                               <span
                                 className={`font-semibold uppercase tracking-[0.18em] ${
                                   isMatch
-                                    ? "text-rose-300"
+                                    ? "text-[#ff9e00]"
                                     : isCurrent
-                                    ? "text-yellow-200"
-                                    : "text-[#8b949e]"
+                                    ? "text-[#ffd700]"
+                                    : "text-[#6b8fa3]"
                                 }`}
                               >
                                 {log.action}
@@ -1297,8 +1309,8 @@ export default function ExplorerPage() {
                         })}
 
                         {animationRunning && animationIndex < logs.length && (
-                          <div className="flex items-center gap-3 px-4 py-3 text-[#6e7681]">
-                            <span className="h-2 w-2 animate-pulse rounded-full bg-emerald-400" />
+                          <div className="flex items-center gap-3 px-4 py-3 text-[#6b8fa3]">
+                            <span className="h-2 w-2 animate-pulse rounded-full bg-[#00e5ff]" />
                             waiting for next traversal step...
                           </div>
                         )}
@@ -1307,21 +1319,21 @@ export default function ExplorerPage() {
                   </div>
                 )
               ) : !selectedNode ? (
-                <div className="flex h-full items-center justify-center rounded-xl border border-dashed border-white/10 bg-white/[0.02] px-6 text-center text-sm text-[#8b949e]">
+                <div className="flex h-full items-center justify-center rounded-xl border border-dashed border-[rgba(0,229,255,0.15)] bg-[rgba(0,229,255,0.02)] px-6 text-center text-sm text-[#6b8fa3]">
                   Click any node in the tree or any log row to inspect it here.
                 </div>
               ) : (
-                <div className="grid gap-4 text-[#c9d1d9] md:grid-cols-[minmax(0,1fr)_280px]">
-                  <div className="rounded-xl border border-white/5 bg-white/[0.03]">
-                    <div className="border-b border-white/5 px-4 py-3 text-xs font-semibold uppercase tracking-[0.2em] text-[#8b949e]">
+                <div className="grid gap-4 text-[#e0f7ff] md:grid-cols-[minmax(0,1fr)_280px]">
+                  <div className="rounded-xl border border-[rgba(0,229,255,0.1)] bg-[rgba(0,229,255,0.04)]">
+                    <div className="border-b border-[rgba(0,229,255,0.08)] px-4 py-3 text-xs font-semibold uppercase tracking-[0.2em] text-[#6b8fa3]">
                       Node Summary
                     </div>
                     <div className="space-y-4 px-4 py-4">
                       <div className="flex items-center gap-3">
-                        <span className="rounded-md border border-cyan-400/30 bg-cyan-400/10 px-2 py-1 text-xs uppercase tracking-[0.18em] text-cyan-200">
+                        <span className="rounded-md border border-[rgba(0,229,255,0.3)] bg-[rgba(0,229,255,0.1)] px-2 py-1 text-xs uppercase tracking-[0.18em] text-[#00e5ff]">
                           selected
                         </span>
-                        <span className="text-lg text-white">
+                        <span className="text-lg text-[#e0f7ff]">
                           {"<"}
                           {selectedNode.tag}
                           {">"}
@@ -1329,39 +1341,39 @@ export default function ExplorerPage() {
                       </div>
 
                       <div className="grid gap-3 sm:grid-cols-2">
-                        <div className="rounded-lg border border-white/5 bg-[#0b0f14] px-3 py-3">
-                          <div className="text-xs uppercase tracking-[0.18em] text-[#6e7681]">Node ID</div>
-                          <div className="mt-2 text-base text-white">{selectedNode.id}</div>
+                        <div className="rounded-lg border border-[rgba(0,229,255,0.08)] bg-[rgba(3,5,8,0.6)] px-3 py-3">
+                          <div className="text-xs uppercase tracking-[0.18em] text-[#6b8fa3]">Node ID</div>
+                          <div className="mt-2 text-base text-[#e0f7ff]">{selectedNode.id}</div>
                         </div>
-                        <div className="rounded-lg border border-white/5 bg-[#0b0f14] px-3 py-3">
-                          <div className="text-xs uppercase tracking-[0.18em] text-[#6e7681]">Depth</div>
-                          <div className="mt-2 text-base text-white">{selectedNode.depth ?? "-"}</div>
+                        <div className="rounded-lg border border-[rgba(0,229,255,0.08)] bg-[rgba(3,5,8,0.6)] px-3 py-3">
+                          <div className="text-xs uppercase tracking-[0.18em] text-[#6b8fa3]">Depth</div>
+                          <div className="mt-2 text-base text-[#e0f7ff]">{selectedNode.depth ?? "-"}</div>
                         </div>
-                        <div className="rounded-lg border border-white/5 bg-[#0b0f14] px-3 py-3">
-                          <div className="text-xs uppercase tracking-[0.18em] text-[#6e7681]">Parent</div>
-                          <div className="mt-2 text-base text-white">{selectedNode.parentId ?? "-"}</div>
+                        <div className="rounded-lg border border-[rgba(0,229,255,0.08)] bg-[rgba(3,5,8,0.6)] px-3 py-3">
+                          <div className="text-xs uppercase tracking-[0.18em] text-[#6b8fa3]">Parent</div>
+                          <div className="mt-2 text-base text-[#e0f7ff]">{selectedNode.parentId ?? "-"}</div>
                         </div>
-                        <div className="rounded-lg border border-white/5 bg-[#0b0f14] px-3 py-3">
-                          <div className="text-xs uppercase tracking-[0.18em] text-[#6e7681]">Children</div>
-                          <div className="mt-2 text-base text-white">{selectedNode.children?.length ?? 0}</div>
+                        <div className="rounded-lg border border-[rgba(0,229,255,0.08)] bg-[rgba(3,5,8,0.6)] px-3 py-3">
+                          <div className="text-xs uppercase tracking-[0.18em] text-[#6b8fa3]">Children</div>
+                          <div className="mt-2 text-base text-[#e0f7ff]">{selectedNode.children?.length ?? 0}</div>
                         </div>
                       </div>
 
-                      <div className="rounded-lg border border-white/5 bg-[#0b0f14] px-3 py-3">
-                        <div className="text-xs uppercase tracking-[0.18em] text-[#6e7681]">Inner Text</div>
-                        <div className="mt-2 whitespace-pre-wrap text-sm text-[#d7e2f0]">
+                      <div className="rounded-lg border border-[rgba(0,229,255,0.08)] bg-[rgba(3,5,8,0.6)] px-3 py-3">
+                        <div className="text-xs uppercase tracking-[0.18em] text-[#6b8fa3]">Inner Text</div>
+                        <div className="mt-2 whitespace-pre-wrap text-sm text-[#e0f7ff]">
                           {selectedNode.innerText || "No inner text"}
                         </div>
                       </div>
                     </div>
                   </div>
 
-                  <div className="rounded-xl border border-white/5 bg-white/[0.03]">
-                    <div className="border-b border-white/5 px-4 py-3 text-xs font-semibold uppercase tracking-[0.2em] text-[#8b949e]">
+                  <div className="rounded-xl border border-[rgba(0,229,255,0.1)] bg-[rgba(0,229,255,0.04)]">
+                    <div className="border-b border-[rgba(0,229,255,0.08)] px-4 py-3 text-xs font-semibold uppercase tracking-[0.2em] text-[#6b8fa3]">
                       Attributes
                     </div>
                     <div className="px-4 py-4">
-                      <pre className="overflow-auto rounded-lg border border-white/5 bg-[#0b0f14] p-4 text-xs leading-6 text-[#d7e2f0]">
+                      <pre className="overflow-auto rounded-lg border border-[rgba(0,229,255,0.08)] bg-[rgba(3,5,8,0.6)] p-4 text-xs leading-6 text-[#e0f7ff]">
                         {selectedNode.attributes
                           ? JSON.stringify(selectedNode.attributes, null, 2)
                           : '{\n  "message": "No attributes"\n}'}
