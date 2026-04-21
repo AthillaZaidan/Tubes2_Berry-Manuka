@@ -1,6 +1,8 @@
 "use client";
 
 import Starfield from "@/components/Starfield";
+import MultithreadToggle from "@/components/MultithreadToggle";
+import LCAFinder from "@/components/LCAFinder";
 import { motion } from "framer-motion";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { DOMNode, TraversalLogEntry, TraversalStats } from "@/lib/types";
@@ -362,6 +364,7 @@ export default function ExplorerPage() {
   const [sourceInput, setSourceInput] = useState(DUMMY_HTML);
   const [selectorInput, setSelectorInput] = useState(".active");
   const [algorithm, setAlgorithm] = useState<"BFS" | "DFS">("BFS");
+  const [parallelMode, setParallelMode] = useState(false);
   const [resultMode, setResultMode] = useState<"ALL" | "TOP_N">("ALL");
   const [topNInput, setTopNInput] = useState("5");
 
@@ -424,7 +427,11 @@ export default function ExplorerPage() {
   const maxDepth = logs.length
     ? Math.max(...logs.map((log) => log.depth))
     : treeMaxDepth;
-  const activeModeLabel = algorithm === "BFS" ? "Breadth First Search" : "Depth First Search";
+  const activeModeLabel = parallelMode
+    ? `Parallel ${algorithm === "BFS" ? "Breadth First Search" : "Depth First Search"}`
+    : algorithm === "BFS"
+      ? "Breadth First Search"
+      : "Depth First Search";
   const visitedCount = Math.min(
     animationIndex,
     logs.filter((log) => log.action !== "skip").length
@@ -535,9 +542,12 @@ export default function ExplorerPage() {
 
     try {
       const limit = resultMode === "ALL" ? 0 : Number(topNInput.trim());
+      const algo = parallelMode
+        ? `parallel_${algorithm.toLowerCase()}`
+        : algorithm.toLowerCase();
       const res = await traverseTree({
         tree,
-        algorithm: algorithm.toLowerCase() as "bfs" | "dfs" | "parallel_bfs" | "parallel_dfs",
+        algorithm: algo as "bfs" | "dfs" | "parallel_bfs" | "parallel_dfs",
         selector: selectorInput.trim(),
         limit,
       });
@@ -726,6 +736,11 @@ export default function ExplorerPage() {
               )}
 
               {traversalError && <p className="mt-3 text-sm text-red-400">{traversalError}</p>}
+
+              <div className="mt-5 space-y-3">
+                <MultithreadToggle enabled={parallelMode} onChange={setParallelMode} />
+                <LCAFinder tree={tree} />
+              </div>
             </div>
           </div>
         </motion.aside>
@@ -798,12 +813,12 @@ export default function ExplorerPage() {
                 <span className="text-sm font-mono text-[#00e5ff]">{speed}ms</span>
                 <span
                   className={`rounded-md border px-2 py-1 text-xs font-semibold tracking-[0.08em] ${
-                    algorithm === "BFS"
-                      ? "border-[rgba(0,229,255,0.4)] bg-[rgba(0,229,255,0.12)] text-[#00e5ff]"
+                    parallelMode
+                      ? "border-[rgba(255,158,0,0.4)] bg-[rgba(255,158,0,0.12)] text-[#ff9e00]"
                       : "border-[rgba(0,229,255,0.4)] bg-[rgba(0,229,255,0.12)] text-[#00e5ff]"
                   }`}
                 >
-                  MODE {algorithm}
+                  MODE {parallelMode ? `Parallel ${algorithm}` : algorithm}
                 </span>
               </div>
             </div>
