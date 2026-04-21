@@ -14,9 +14,13 @@ export default function Navbar() {
   return (
     <header className="sticky top-0 z-50 border-b border-border/60 bg-background/80 backdrop-blur">
       <div className="mx-auto flex max-w-7xl items-center justify-between px-6 py-5">
-        <Link href="/" className="text-[22px] font-bold">
-          <span className="text-foreground">ilove</span>
-          <span className="text-primary">Tree</span>
+        <Link href="/" className="flex items-center gap-3 text-[22px] font-bold">
+          <img
+            src="/logo-tree.ico"
+            alt="iloveTree logo"
+            className="h-12 w-12 object-contain md:h-14 md:w-14"
+          />
+          <span className="text-foreground">iloveTree</span>
         </Link>
 
         <nav className="flex items-center gap-10">
