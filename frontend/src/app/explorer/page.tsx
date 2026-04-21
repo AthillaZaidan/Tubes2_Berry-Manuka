@@ -3,216 +3,10 @@
 import Starfield from "@/components/Starfield";
 import { motion } from "framer-motion";
 import { useEffect, useMemo, useRef, useState } from "react";
-
-type DOMNode = {
-  id: string;
-  tag: string;
-  children?: DOMNode[];
-  depth?: number;
-  parentId?: string;
-  innerText?: string;
-  attributes?: Record<string, string>;
-};
-
-type TraversalLogEntry = {
-  step: number;
-  nodeId: string;
-  tag: string;
-  action: "visit" | "match" | "skip";
-  depth: number;
-};
+import { DOMNode, TraversalLogEntry, TraversalStats } from "@/lib/types";
+import { scrapeHTML, traverseTree } from "@/lib/api";
 
 type NodeState = "default" | "visited" | "current" | "match";
-
-const DUMMY_TREE: DOMNode = {
-  id: "html",
-  tag: "html",
-  depth: 0,
-  children: [
-    {
-      id: "head",
-      tag: "head",
-      parentId: "html",
-      depth: 1,
-      children: [
-        {
-          id: "title",
-          tag: "title",
-          parentId: "head",
-          depth: 2,
-          innerText: "Sample",
-        },
-      ],
-    },
-    {
-      id: "body",
-      tag: "body",
-      parentId: "html",
-      depth: 1,
-      children: [
-        {
-          id: "header",
-          tag: "header",
-          parentId: "body",
-          depth: 2,
-          children: [
-            {
-              id: "nav",
-              tag: "nav",
-              parentId: "header",
-              depth: 3,
-              children: [
-                {
-                  id: "a1",
-                  tag: "a",
-                  parentId: "nav",
-                  depth: 4,
-                  innerText: "Home",
-                  attributes: { href: "/" },
-                },
-                {
-                  id: "a2",
-                  tag: "a",
-                  parentId: "nav",
-                  depth: 4,
-                  innerText: "About",
-                  attributes: { href: "/about" },
-                },
-                {
-                  id: "a3",
-                  tag: "a",
-                  parentId: "nav",
-                  depth: 4,
-                  innerText: "Explorer",
-                  attributes: { href: "/explorer", class: "active" },
-                },
-              ],
-            },
-          ],
-        },
-        {
-          id: "main",
-          tag: "main",
-          parentId: "body",
-          depth: 2,
-          children: [
-            {
-              id: "article1",
-              tag: "article",
-              parentId: "main",
-              depth: 3,
-              children: [
-                {
-                  id: "h1",
-                  tag: "h1",
-                  parentId: "article1",
-                  depth: 4,
-                  innerText: "Hello",
-                },
-                {
-                  id: "p1",
-                  tag: "p",
-                  parentId: "article1",
-                  depth: 4,
-                  innerText: "Paragraph",
-                },
-                {
-                  id: "span1",
-                  tag: "span",
-                  parentId: "p1",
-                  depth: 5,
-                  innerText: "child span",
-                },
-              ],
-            },
-            {
-              id: "article2",
-              tag: "article",
-              parentId: "main",
-              depth: 3,
-              children: [
-                {
-                  id: "h2",
-                  tag: "h2",
-                  parentId: "article2",
-                  depth: 4,
-                  innerText: "Sub heading",
-                },
-                {
-                  id: "p2",
-                  tag: "p",
-                  parentId: "article2",
-                  depth: 4,
-                  innerText: "Paragraph 2",
-                },
-                {
-                  id: "span2",
-                  tag: "span",
-                  parentId: "p2",
-                  depth: 5,
-                  innerText: "span 2",
-                },
-              ],
-            },
-            {
-              id: "aside",
-              tag: "aside",
-              parentId: "main",
-              depth: 3,
-              children: [
-                {
-                  id: "ul",
-                  tag: "ul",
-                  parentId: "aside",
-                  depth: 4,
-                  children: [
-                    {
-                      id: "li1",
-                      tag: "li",
-                      parentId: "ul",
-                      depth: 5,
-                      innerText: "One",
-                    },
-                    {
-                      id: "li2",
-                      tag: "li",
-                      parentId: "ul",
-                      depth: 5,
-                      innerText: "Two",
-                      attributes: { class: "active" },
-                    },
-                    {
-                      id: "li3",
-                      tag: "li",
-                      parentId: "ul",
-                      depth: 5,
-                      innerText: "Three",
-                    },
-                  ],
-                },
-              ],
-            },
-          ],
-        },
-        {
-          id: "footer",
-          tag: "footer",
-          parentId: "body",
-          depth: 2,
-          children: [
-            {
-              id: "small",
-              tag: "small",
-              parentId: "footer",
-              depth: 3,
-              innerText: "Footer text",
-            },
-          ],
-        },
-      ],
-    },
-  ],
-};
 
 const DUMMY_HTML = `<!DOCTYPE html>
 <html>
@@ -250,34 +44,6 @@ const DUMMY_HTML = `<!DOCTYPE html>
   </body>
 </html>`;
 
-const DUMMY_LOGS: TraversalLogEntry[] = [
-  { step: 1, nodeId: "html", tag: "html", action: "visit", depth: 0 },
-  { step: 2, nodeId: "head", tag: "head", action: "visit", depth: 1 },
-  { step: 3, nodeId: "body", tag: "body", action: "visit", depth: 1 },
-  { step: 4, nodeId: "title", tag: "title", action: "visit", depth: 2 },
-  { step: 5, nodeId: "header", tag: "header", action: "visit", depth: 2 },
-  { step: 6, nodeId: "main", tag: "main", action: "visit", depth: 2 },
-  { step: 7, nodeId: "footer", tag: "footer", action: "visit", depth: 2 },
-  { step: 8, nodeId: "nav", tag: "nav", action: "visit", depth: 3 },
-  { step: 9, nodeId: "article1", tag: "article", action: "visit", depth: 3 },
-  { step: 10, nodeId: "article2", tag: "article", action: "visit", depth: 3 },
-  { step: 11, nodeId: "aside", tag: "aside", action: "visit", depth: 3 },
-  { step: 12, nodeId: "small", tag: "small", action: "visit", depth: 3 },
-  { step: 13, nodeId: "a1", tag: "a", action: "visit", depth: 4 },
-  { step: 14, nodeId: "a2", tag: "a", action: "visit", depth: 4 },
-  { step: 15, nodeId: "a3", tag: "a", action: "match", depth: 4 },
-  { step: 16, nodeId: "h1", tag: "h1", action: "visit", depth: 4 },
-  { step: 17, nodeId: "p1", tag: "p", action: "visit", depth: 4 },
-  { step: 18, nodeId: "h2", tag: "h2", action: "visit", depth: 4 },
-  { step: 19, nodeId: "p2", tag: "p", action: "visit", depth: 4 },
-  { step: 20, nodeId: "ul", tag: "ul", action: "visit", depth: 4 },
-  { step: 21, nodeId: "span1", tag: "span", action: "visit", depth: 5 },
-  { step: 22, nodeId: "span2", tag: "span", action: "visit", depth: 5 },
-  { step: 23, nodeId: "li1", tag: "li", action: "visit", depth: 5 },
-  { step: 24, nodeId: "li2", tag: "li", action: "match", depth: 5 },
-  { step: 25, nodeId: "li3", tag: "li", action: "visit", depth: 5 },
-];
-
 function isValidUrl(value: string) {
   try {
     const url = new URL(value);
@@ -296,7 +62,7 @@ function looksLikeHtml(value: string) {
   );
 }
 
-function findNodeById(node: DOMNode, id: string): DOMNode | null {
+function findNodeById(node: DOMNode, id: number): DOMNode | null {
   if (node.id === id) return node;
   for (const child of node.children ?? []) {
     const found = findNodeById(child, id);
@@ -315,133 +81,9 @@ function flattenNodes(root: DOMNode): DOMNode[] {
   return out;
 }
 
-function parseSelectorMatch(node: DOMNode, selector: string): boolean {
-  const normalized = selector.trim();
-  if (!normalized) return false;
-
-  if (normalized.startsWith(".")) {
-    const className = normalized.slice(1);
-    const classValue = node.attributes?.class ?? "";
-    return classValue.split(/\s+/).filter(Boolean).includes(className);
-  }
-
-  if (normalized.startsWith("#")) {
-    const idValue = normalized.slice(1);
-    return node.attributes?.id === idValue;
-  }
-
-  if (normalized.startsWith("[") && normalized.endsWith("]")) {
-    const inner = normalized.slice(1, -1).trim();
-    if (!inner) return false;
-
-    if (!inner.includes("=")) {
-      return Boolean(node.attributes?.[inner]);
-    }
-
-    const [rawKey, rawValue] = inner.split("=");
-    const key = rawKey.trim();
-    const value = rawValue.trim().replace(/^["']|["']$/g, "");
-    return node.attributes?.[key] === value;
-  }
-
-  return node.tag.toLowerCase() === normalized.toLowerCase();
-}
-
-function generateTraversalLogs(
-  root: DOMNode,
-  algorithm: "BFS" | "DFS",
-  selector: string
-): TraversalLogEntry[] {
-  const logs: TraversalLogEntry[] = [];
-  let step = 1;
-
-  if (algorithm === "BFS") {
-    const queue: DOMNode[] = [root];
-    while (queue.length > 0) {
-      const current = queue.shift();
-      if (!current) continue;
-
-      logs.push({
-        step: step++,
-        nodeId: current.id,
-        tag: current.tag,
-        action: parseSelectorMatch(current, selector) ? "match" : "visit",
-        depth: current.depth ?? 0,
-      });
-
-      queue.push(...(current.children ?? []));
-    }
-    return logs;
-  }
-
-  const stack: DOMNode[] = [root];
-  while (stack.length > 0) {
-    const current = stack.pop();
-    if (!current) continue;
-
-    logs.push({
-      step: step++,
-      nodeId: current.id,
-      tag: current.tag,
-      action: parseSelectorMatch(current, selector) ? "match" : "visit",
-      depth: current.depth ?? 0,
-    });
-
-    const children = current.children ?? [];
-    for (let index = children.length - 1; index >= 0; index -= 1) {
-      stack.push(children[index]);
-    }
-  }
-
-  return logs;
-}
-
-function parseHtmlInputToTree(html: string): DOMNode | null {
-  if (typeof window === "undefined") return null;
-
-  const doc = new DOMParser().parseFromString(html, "text/html");
-  const root = doc.documentElement;
-  if (!root) return null;
-
-  const counter = { value: 1 };
-
-  const buildNode = (element: Element, depth: number, parentId?: string): DOMNode => {
-    const tag = element.tagName.toLowerCase();
-    const id = `${tag}-${counter.value++}`;
-
-    const attributes: Record<string, string> = {};
-    for (const attr of Array.from(element.attributes)) {
-      attributes[attr.name] = attr.value;
-    }
-
-    const ownText = Array.from(element.childNodes)
-      .filter((node) => node.nodeType === Node.TEXT_NODE)
-      .map((node) => node.textContent?.trim() ?? "")
-      .join(" ")
-      .replace(/\s+/g, " ")
-      .trim();
-
-    const children = Array.from(element.children).map((child) =>
-      buildNode(child, depth + 1, id)
-    );
-
-    return {
-      id,
-      tag,
-      parentId,
-      depth,
-      innerText: ownText || undefined,
-      attributes: Object.keys(attributes).length > 0 ? attributes : undefined,
-      children,
-    };
-  };
-
-  return buildNode(root, 0);
-}
-
 type TreeEdge = {
-  parentId: string;
-  childId: string;
+  parentId: number;
+  childId: number;
 };
 
 type PositionedNode = {
@@ -465,7 +107,7 @@ function collectEdges(root: DOMNode): TreeEdge[] {
 }
 
 function computeTreeLayout(root: DOMNode, horizontalGap = 128, verticalGap = 108) {
-  const rawNodes = new Map<string, PositionedNode>();
+  const rawNodes = new Map<number, PositionedNode>();
   let cursorX = 0;
   let maxDepth = 0;
   const leftGutter = 132;
@@ -517,7 +159,7 @@ function computeTreeLayout(root: DOMNode, horizontalGap = 128, verticalGap = 108
   };
 }
 
-function edgeActive(parent: DOMNode, child: DOMNode, visitedIds: string[], currentId: string | null) {
+function edgeActive(parent: DOMNode, child: DOMNode, visitedIds: number[], currentId: number | null) {
   return (
     visitedIds.includes(parent.id) &&
     (visitedIds.includes(child.id) || currentId === child.id)
@@ -571,10 +213,10 @@ function TreeCanvas({
   zoom,
 }: {
   tree: DOMNode;
-  selectedNodeId: string | null;
-  currentAnimatedNodeId: string | null;
-  visitedIds: string[];
-  matchIds: string[];
+  selectedNodeId: number | null;
+  currentAnimatedNodeId: number | null;
+  visitedIds: number[];
+  matchIds: number[];
   onSelectNode: (node: DOMNode) => void;
   zoom: number;
 }) {
@@ -725,18 +367,19 @@ export default function ExplorerPage() {
 
   const [parseError, setParseError] = useState("");
   const [traversalError, setTraversalError] = useState("");
-  const [hasParsed, setHasParsed] = useState(true);
+  const [hasParsed, setHasParsed] = useState(false);
 
   const [isParsing, setIsParsing] = useState(false);
   const [isTraversing, setIsTraversing] = useState(false);
 
-  const [tree, setTree] = useState<DOMNode | null>(DUMMY_TREE);
-  const [logs, setLogs] = useState<TraversalLogEntry[]>(DUMMY_LOGS);
+  const [tree, setTree] = useState<DOMNode | null>(null);
+  const [logs, setLogs] = useState<TraversalLogEntry[]>([]);
 
   const [speed, setSpeed] = useState(350);
   const [zoom, setZoom] = useState(1);
 
-  const [selectedNodeId, setSelectedNodeId] = useState<string | null>(null);
+  const [selectedNodeId, setSelectedNodeId] = useState<number | null>(null);
+  const [executionMs, setExecutionMs] = useState(0);
   const [bottomTab, setBottomTab] = useState<"logs" | "inspector">("logs");
 
   const [animationRunning, setAnimationRunning] = useState(false);
@@ -846,25 +489,23 @@ export default function ExplorerPage() {
     setIsParsing(true);
 
     try {
-      await new Promise((resolve) => setTimeout(resolve, 650));
+      const req = sourceMode === "URL" ? { url: trimmed } : { html: trimmed };
+      const res = await scrapeHTML(req);
 
-      const parsedTree =
-        sourceMode === "HTML" ? parseHtmlInputToTree(trimmed) : DUMMY_TREE;
-
-      if (!parsedTree) {
+      if (!res.tree) {
         setParseError("Gagal membaca HTML. Pastikan format HTML valid.");
         return;
       }
 
-      setTree(parsedTree);
+      setTree(res.tree);
       setLogs([]);
       setHasParsed(true);
       setSelectedNodeId(null);
       setAnimationRunning(false);
       setAnimationIndex(0);
       setBottomTab("logs");
-    } catch {
-      setParseError("Gagal melakukan parse HTML.");
+    } catch (err: any) {
+      setParseError(err.message || "Gagal melakukan parse HTML. Pastikan backend berjalan.");
     } finally {
       setIsParsing(false);
     }
@@ -893,13 +534,28 @@ export default function ExplorerPage() {
     setBottomTab("logs");
 
     try {
-      await new Promise((resolve) => setTimeout(resolve, 250));
+      const limit = resultMode === "ALL" ? 0 : Number(topNInput.trim());
+      const res = await traverseTree({
+        tree,
+        algorithm: algorithm.toLowerCase() as "bfs" | "dfs" | "parallel_bfs" | "parallel_dfs",
+        selector: selectorInput.trim(),
+        limit,
+      });
 
-      const computedLogs = generateTraversalLogs(tree, algorithm, selectorInput);
-      setLogs(computedLogs);
+      // Convert backend log format to frontend format
+      const frontendLogs: TraversalLogEntry[] = res.log.map((entry) => ({
+        step: entry.step,
+        nodeId: entry.nodeId,
+        tag: entry.tag,
+        action: entry.action as "visit" | "match" | "skip",
+        depth: entry.depth,
+      }));
+
+      setLogs(frontendLogs);
+      setExecutionMs(res.executionMs);
       setAnimationRunning(true);
-    } catch {
-      setTraversalError("Gagal menjalankan traversal.");
+    } catch (err: any) {
+      setTraversalError(err.message || "Gagal menjalankan traversal. Pastikan backend berjalan.");
       setIsTraversing(false);
     }
   }
@@ -1169,7 +825,7 @@ export default function ExplorerPage() {
                 <strong className="text-[#00e5ff]">{matchCount}</strong>{" "}
                 <span className="text-[10px] uppercase tracking-wider text-[#6b8fa3]">matches</span>
               </span>
-              <span className="text-[#ff9e00]">2.8 ms</span>
+              <span className="text-[#ff9e00]">{executionMs.toFixed(1)} ms</span>
             </div>
           </motion.div>
 
