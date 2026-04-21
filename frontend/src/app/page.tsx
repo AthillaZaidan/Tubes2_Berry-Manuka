@@ -11,7 +11,7 @@ export default function HomePage() {
             Welcome to
             <br />
             <span className="text-gradient drop-shadow-[0_0_25px_rgba(34,197,94,0.25)]">
-              iloveTree
+              Berry-Manuka
             </span>
           </h1>
           <p className="text-base md:text-lg max-w-xl mx-auto leading-8 text-muted-foreground">
