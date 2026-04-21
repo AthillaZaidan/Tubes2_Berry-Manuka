@@ -1,0 +1,442 @@
+\section{Gambaran Umum Sistem}
+
+Aplikasi yang dikembangkan merupakan sistem berbasis web yang bertujuan untuk melakukan pencarian elemen HTML pada struktur DOM berdasarkan CSS selector. Sistem ini memanfaatkan algoritma Breadth First Search (BFS) dan Depth First Search (DFS) sebagai metode traversal.
+
+\begin{tcolorbox}[colback=gray!10,title=Input dan Output Sistem]
+\textbf{Input:}
+\begin{itemize}
+    \item URL website atau teks HTML
+    \item CSS Selector
+    \item Pilihan algoritma (BFS / DFS)
+    \item Jumlah hasil
+\end{itemize}
+
+\textbf{Output:}
+\begin{itemize}
+    \item Elemen hasil pencarian
+    \item Visualisasi DOM
+    \item Jalur traversal
+    \item Waktu eksekusi
+\end{itemize}
+\end{tcolorbox}
+
+---
+
+\section{Arsitektur Sistem}
+
+Sistem dibangun dengan pendekatan client-server.
+
+\begin{center}
+\begin{tabular}{|c|c|c|}
+\hline
+Frontend & $\rightarrow$ & Backend \\
+\hline
+Input user & & Parsing + BFS/DFS \\
+\hline
+Visualisasi & $\leftarrow$ & Hasil traversal \\
+\hline
+\end{tabular}
+\end{center}
+
+\begin{itemize}
+    \item Frontend: menerima input dan menampilkan hasil
+    \item Backend: melakukan parsing HTML dan traversal DOM
+\end{itemize}
+
+---
+
+\section{Representasi DOM Tree}
+
+Struktur DOM direpresentasikan sebagai tree, dengan setiap node memiliki atribut sebagai berikut:
+
+\begin{center}
+\begin{tabular}{|c|l|}
+\hline
+Atribut & Deskripsi \\
+\hline
+Tag & Nama elemen HTML \\
+Attribute & Atribut pada tag \\
+Children & Node anak \\
+Parent & Node induk \\
+\hline
+\end{tabular}
+\end{center}
+
+Struktur ini memungkinkan traversal dilakukan secara sistematis menggunakan BFS maupun DFS.
+
+---
+
+\section{HTML Parsing}
+
+HTML yang diperoleh dari input akan diproses menjadi struktur DOM Tree melalui proses parsing.
+
+\begin{tcolorbox}[colback=blue!5,title=Alur Parsing]
+HTML Input $\rightarrow$ Tokenisasi $\rightarrow$ Tree Construction $\rightarrow$ DOM Tree
+\end{tcolorbox}
+
+Tahapan:
+\begin{enumerate}
+    \item Membaca HTML mentah
+    \item Mengidentifikasi tag pembuka dan penutup
+    \item Menyusun node dalam bentuk tree
+\end{enumerate}
+
+---
+
+\section{Implementasi CSS Selector}
+
+CSS Selector digunakan untuk menentukan elemen target dalam traversal.
+
+\begin{center}
+\begin{tabular}{|c|c|l|}
+\hline
+Tipe & Contoh & Fungsi \\
+\hline
+Tag & p & Semua elemen p \\
+Class & .box & Elemen dengan class tertentu \\
+ID & \#header & Elemen dengan id tertentu \\
+\hline
+\end{tabular}
+\end{center}
+
+\textbf{Combinator yang digunakan:}
+\begin{itemize}
+    \item Descendant ( )
+    \item Child (>)
+    \item Adjacent Sibling (+)
+    \item General Sibling (~)
+\end{itemize}
+
+---
+
+\section{Implementasi Algoritma BFS dan DFS}
+\subsection{Implementasi Algoritma BFS}
+
+Implementasi algoritma \textit{Breadth First Search} (BFS) pada aplikasi ini digunakan untuk menelusuri pohon DOM secara melebar, yaitu mengunjungi seluruh node pada satu level terlebih dahulu sebelum melanjutkan ke level berikutnya. Pendekatan ini sesuai untuk kasus pencarian elemen yang cenderung berada lebih dekat ke akar pohon.
+
+Kode program BFS diambil langsung dari file implementasi pada repository, yaitu:
+
+\begin{tcolorbox}[colback=gray!10,title=Lokasi File Implementasi BFS]
+\texttt{backend/internal/traversal/bfs.go}
+\end{tcolorbox}
+
+\lstinputlisting[
+    style=godestyle,
+    caption={Implementasi algoritma BFS pada file \texttt{bfs.go}},
+    label={lst:bfs}
+]{../backend/traversal/bfs.go}
+
+Secara umum, alur kerja BFS pada pohon DOM dalam program ini dapat diringkas pada Tabel~\ref{tab:alur-bfs}.
+
+\begin{table}[H]
+\centering
+\caption{Alur kerja BFS pada DOM Tree}
+\label{tab:alur-bfs}
+\begin{tabular}{|c|p{10cm}|}
+\hline
+\textbf{Langkah} & \textbf{Penjelasan} \\ \hline
+1 & Node akar DOM dimasukkan ke dalam \textit{queue}. \\ \hline
+2 & Node paling depan diambil dari \textit{queue}. \\ \hline
+3 & Node diperiksa apakah sesuai dengan CSS selector yang diberikan. \\ \hline
+4 & Jika sesuai, node dicatat sebagai hasil pencarian. \\ \hline
+5 & Seluruh child dari node tersebut dimasukkan ke \textit{queue}. \\ \hline
+6 & Proses diulangi sampai \textit{queue} kosong atau jumlah hasil yang diminta telah terpenuhi. \\ \hline
+\end{tabular}
+\end{table}
+
+Karakteristik utama BFS pada implementasi ini ditunjukkan pada ringkasan berikut.
+
+\begin{center}
+\begin{tabular}{|l|p{8.5cm}|}
+\hline
+\textbf{Aspek} & \textbf{Keterangan} \\ \hline
+Struktur data & Menggunakan \textit{queue} (FIFO). \\ \hline
+Pola traversal & Menelusuri pohon per level, dari atas ke bawah. \\ \hline
+Kelebihan & Baik untuk menemukan elemen yang berada dekat root lebih awal. \\ \hline
+Kekurangan & Dapat menggunakan memori lebih besar pada pohon yang sangat lebar. \\ \hline
+\end{tabular}
+\end{center}
+
+Dengan demikian, implementasi BFS pada aplikasi ini menekankan traversal level-order sehingga urutan kunjungan node dapat divisualisasikan dengan jelas pada traversal log dan highlight jalur pencarian.
+
+
+\subsection{Implementasi Algoritma DFS}
+
+Implementasi algoritma \textit{Depth First Search} (DFS) pada aplikasi ini digunakan untuk menelusuri pohon DOM secara mendalam, yaitu mengikuti satu cabang hingga node terdalam terlebih dahulu sebelum melakukan \textit{backtracking} ke cabang lain. Pendekatan ini sesuai untuk eksplorasi struktur DOM yang dalam.
+
+Kode program DFS diambil langsung dari file implementasi pada repository, yaitu:
+
+\begin{tcolorbox}[colback=gray!10,title=Lokasi File Implementasi DFS]
+\texttt{backend/internal/traversal/dfs.go}
+\end{tcolorbox}
+
+\lstinputlisting[
+    style=godestyle,
+    caption={Implementasi algoritma DFS pada file \texttt{dfs.go}},
+    label={lst:dfs}
+]{../backend/traversal/dfs.go}
+
+Secara umum, alur kerja DFS pada pohon DOM dalam program ini dapat diringkas pada Tabel~\ref{tab:alur-dfs}.
+
+\begin{table}[H]
+\centering
+\caption{Alur kerja DFS pada DOM Tree}
+\label{tab:alur-dfs}
+\begin{tabular}{|c|p{10cm}|}
+\hline
+\textbf{Langkah} & \textbf{Penjelasan} \\ \hline
+1 & Traversal dimulai dari node akar DOM. \\ \hline
+2 & Node saat ini diperiksa apakah sesuai dengan CSS selector. \\ \hline
+3 & Jika sesuai, node dicatat sebagai hasil pencarian. \\ \hline
+4 & Algoritma melanjutkan penelusuran ke child node secara mendalam. \\ \hline
+5 & Jika suatu cabang selesai ditelusuri, algoritma kembali ke parent untuk melanjutkan ke cabang lain. \\ \hline
+6 & Proses berhenti ketika seluruh node telah ditelusuri atau jumlah hasil yang diminta telah terpenuhi. \\ \hline
+\end{tabular}
+\end{table}
+
+Karakteristik utama DFS pada implementasi ini ditunjukkan pada ringkasan berikut.
+
+\begin{center}
+\begin{tabular}{|l|p{8.5cm}|}
+\hline
+\textbf{Aspek} & \textbf{Keterangan} \\ \hline
+Struktur data & Menggunakan \textit{stack} atau rekursi. \\ \hline
+Pola traversal & Menelusuri satu cabang hingga dalam sebelum pindah ke cabang lain. \\ \hline
+Kelebihan & Cocok untuk pohon yang dalam dan relatif hemat memori pada beberapa kasus. \\ \hline
+Kekurangan & Tidak selalu menemukan node yang dekat root lebih dahulu. \\ \hline
+\end{tabular}
+\end{center}
+
+Dengan demikian, implementasi DFS pada aplikasi ini menekankan traversal depth-first, sehingga jalur pencarian terlihat lebih fokus pada satu cabang sebelum berpindah ke cabang lainnya. Hal ini juga menghasilkan pola traversal log yang berbeda dibandingkan BFS.
+
+---
+
+\subsection{Perbandingan BFS dan DFS}
+
+\begin{center}
+\begin{tabular}{|c|c|c|}
+\hline
+Aspek & BFS & DFS \\
+\hline
+Traversal & Level & Depth \\
+Struktur Data & Queue & Stack / Rekursi \\
+Kecepatan & Lebih cepat untuk target dekat & Lebih cepat untuk struktur dalam \\
+Memory & Lebih besar & Lebih kecil \\
+\hline
+\end{tabular}
+\end{center}
+
+---
+
+\subsection{Analisis Kompleksitas}
+
+\begin{itemize}
+    \item BFS: O(n)
+    \item DFS: O(n)
+\end{itemize}
+
+Dengan:
+\begin{itemize}
+    \item n = jumlah node pada DOM
+\end{itemize}
+
+Performa juga dipengaruhi oleh:
+\begin{itemize}
+    \item Kompleksitas selector
+    \item Struktur pohon DOM
+\end{itemize}
+
+---
+
+\section{Implementasi Binary Lifting untuk LCA pada DOM}
+
+Salah satu bonus yang diimplementasikan pada aplikasi ini adalah pencarian
+\textit{Lowest Common Ancestor} (LCA) menggunakan teknik \textit{Binary Lifting}.
+Dalam konteks pohon DOM, fitur ini digunakan untuk menentukan elemen HTML
+terdekat yang menjadi leluhur bersama dari dua node tertentu. Implementasi ini
+disimpan pada file \texttt{backend/lca/binary\_lifting.go}.
+
+\begin{tcolorbox}[colback=gray!10,title=Lokasi File Implementasi Binary Lifting]
+\texttt{backend/lca/binary\_lifting.go}
+\end{tcolorbox}
+
+\lstinputlisting[
+    style=godestyle,
+    caption={Implementasi Binary Lifting pada file \texttt{binary\_lifting.go}},
+    label={lst:binary-lifting}
+]{../backend/lca/binary_lifting.go}
+
+Secara umum, implementasi ini dibangun di atas empat komponen utama yang dirangkum
+pada Tabel~\ref{tab:komponen-binary-lifting}.
+
+\begin{table}[H]
+\centering
+\caption{Komponen utama implementasi Binary Lifting}
+\label{tab:komponen-binary-lifting}
+\begin{tabular}{|l|p{9.5cm}|}
+\hline
+\textbf{Komponen} & \textbf{Peran} \\ \hline
+\texttt{LCAProcessor} & Menyimpan seluruh tabel dan informasi yang diperlukan untuk query LCA. \\ \hline
+\texttt{NewLCAProcessor} & Melakukan preprocessing terhadap pohon DOM dan membangun tabel ancestor. \\ \hline
+\texttt{Query} & Menghitung ID node LCA dari dua node yang diberikan. \\ \hline
+\texttt{GetPath} dan \texttt{FindLCA} & Fungsi tambahan untuk mengambil jalur node ke root dan mengembalikan node DOM hasil LCA. \\ \hline
+\end{tabular}
+\end{table}
+
+\subsubsection{Struktur Data yang Digunakan}
+
+Struktur utama yang digunakan adalah \texttt{LCAProcessor}. Struktur ini menyimpan
+informasi yang diperlukan agar pencarian LCA dapat dilakukan dengan cepat.
+
+\begin{center}
+\begin{tabular}{|l|p{8.8cm}|}
+\hline
+\textbf{Field} & \textbf{Fungsi} \\ \hline
+\texttt{Up [][]int} & Tabel ancestor, dengan \texttt{Up[v][k]} menyatakan leluhur ke-$2^k$ dari node \texttt{v}. \\ \hline
+\texttt{Depth []int} & Menyimpan kedalaman setiap node pada pohon DOM. \\ \hline
+\texttt{Nodes []*model.DOMNode} & Menyimpan referensi node DOM berdasarkan ID, sehingga hasil query dapat langsung dipetakan kembali ke node asli. \\ \hline
+\texttt{N int} & Menyimpan jumlah total node. \\ \hline
+\end{tabular}
+\end{center}
+
+Konstanta \texttt{maxLog = 20} digunakan sebagai batas jumlah level ancestor yang
+disimpan. Nilai ini berarti implementasi dapat menangani kedalaman hingga sekitar
+$2^{20}$ langkah ancestor, yang sudah sangat cukup untuk ukuran DOM pada aplikasi ini.
+
+\subsubsection{Tahap Preprocessing}
+
+Tahap preprocessing dilakukan di fungsi \texttt{NewLCAProcessor}. Tahap ini bertujuan
+membangun tabel ancestor sebelum query dijalankan. Alurnya dirangkum pada
+Tabel~\ref{tab:alur-preprocess-lca}.
+
+\begin{table}[H]
+\centering
+\caption{Alur preprocessing Binary Lifting}
+\label{tab:alur-preprocess-lca}
+\begin{tabular}{|c|p{10cm}|}
+\hline
+\textbf{Langkah} & \textbf{Penjelasan} \\ \hline
+1 & Melakukan \texttt{RebuildParentPointers(root)} agar setiap node memiliki informasi parent yang konsisten. \\ \hline
+2 & Menghitung jumlah total node dengan fungsi \texttt{countNodes(root)}. \\ \hline
+3 & Mengalokasikan tabel \texttt{up}, array \texttt{depth}, dan array \texttt{nodes}. \\ \hline
+4 & Menginisialisasi seluruh nilai \texttt{up[v][k]} dengan \texttt{-1} sebagai penanda bahwa ancestor belum ada. \\ \hline
+5 & Mengisi \texttt{depth}, \texttt{nodes}, dan \texttt{up[v][0]} melalui fungsi \texttt{fillTables}. \\ \hline
+6 & Mengisi tabel ancestor tingkat lebih tinggi dengan rumus \texttt{up[v][k] = up[up[v][k-1]][k-1]}. \\ \hline
+\end{tabular}
+\end{table}
+
+Bagian preprocessing inilah yang menjadi inti dari teknik Binary Lifting. Setelah tabel
+ancestor selesai dibangun, query LCA tidak perlu lagi menelusuri pohon dari awal.
+
+\begin{tcolorbox}[colback=blue!5,title=Intuisi Tabel \texttt{Up}]
+Jika \texttt{Up[v][0]} adalah parent langsung dari node \texttt{v}, maka:
+\begin{itemize}
+    \item \texttt{Up[v][1]} adalah leluhur 2 langkah di atas \texttt{v}
+    \item \texttt{Up[v][2]} adalah leluhur 4 langkah di atas \texttt{v}
+    \item \texttt{Up[v][3]} adalah leluhur 8 langkah di atas \texttt{v}
+\end{itemize}
+Dengan demikian, perpindahan ke ancestor dapat dilakukan dalam lompatan pangkat dua.
+\end{tcolorbox}
+
+\subsubsection{Fungsi Pendukung}
+
+Terdapat dua fungsi pendukung utama sebelum query dilakukan.
+
+\begin{enumerate}
+    \item \textbf{\texttt{countNodes(node)}}\\
+    Fungsi ini menghitung jumlah seluruh node pada DOM Tree secara rekursif.
+    Nilai ini digunakan untuk menentukan ukuran array yang akan dialokasikan.
+
+    \item \textbf{\texttt{fillTables(node, up, depth, nodes)}}\\
+    Fungsi ini mengisi tiga informasi dasar:
+    \begin{itemize}
+        \item \texttt{depth[node.ID]} dengan kedalaman node,
+        \item \texttt{nodes[node.ID]} dengan referensi node DOM,
+        \item \texttt{up[node.ID][0]} dengan parent langsung node tersebut.
+    \end{itemize}
+\end{enumerate}
+
+Karena setiap node DOM pada program ini memiliki \texttt{ID}, \texttt{Depth}, dan
+\texttt{ParentID}, maka proses pengisian tabel dapat dilakukan secara langsung tanpa
+perlu pemetaan tambahan.
+
+\subsubsection{Proses Query LCA}
+
+Pencarian LCA dilakukan melalui fungsi \texttt{Query(u, v)}. Fungsi ini menerima dua ID
+node, kemudian mengembalikan ID dari leluhur bersama terendah.
+
+Secara garis besar, proses query terdiri atas dua tahap yang ditunjukkan pada
+Tabel~\ref{tab:alur-query-lca}.
+
+\begin{table}[H]
+\centering
+\caption{Alur query LCA dengan Binary Lifting}
+\label{tab:alur-query-lca}
+\begin{tabular}{|c|p{10cm}|}
+\hline
+\textbf{Tahap} & \textbf{Penjelasan} \\ \hline
+1 & Jika kedalaman kedua node berbeda, node yang lebih dalam diangkat terlebih dahulu sampai kedalamannya sama. \\ \hline
+2 & Jika kedua node belum sama, keduanya diangkat bersama-sama dari lompatan terbesar ke terkecil sampai parent langsung keduanya sama. \\ \hline
+\end{tabular}
+\end{table}
+
+Penjelasannya adalah sebagai berikut:
+\begin{itemize}
+    \item Mula-mula, fungsi memastikan bahwa \texttt{u} berada pada kedalaman yang sama atau lebih dalam daripada \texttt{v}.
+    \item Selisih kedalaman dihitung dalam variabel \texttt{diff}.
+    \item Dengan memanfaatkan representasi biner dari \texttt{diff}, node \texttt{u} diangkat menggunakan tabel \texttt{Up}.
+    \item Jika setelah itu \texttt{u == v}, berarti salah satu node memang ancestor dari node lainnya.
+    \item Jika belum sama, maka kedua node diangkat serentak dari level tertinggi ke terendah.
+    \item Ketika keduanya hampir bertemu, hasil akhirnya adalah parent langsung dari salah satunya, yaitu \texttt{lca.Up[u][0]}.
+\end{itemize}
+
+\begin{tcolorbox}[colback=green!5,title=Keunggulan Query Ini]
+Setelah preprocessing selesai, pencarian LCA tidak lagi memerlukan traversal penuh
+pada pohon DOM. Query dapat diselesaikan dalam kompleksitas waktu
+$\mathcal{O}(\log N)$.
+\end{tcolorbox}
+
+\subsubsection{Fungsi Tambahan}
+
+Selain fungsi query utama, terdapat dua fungsi tambahan yang berguna untuk integrasi
+dengan fitur visualisasi.
+
+\begin{enumerate}
+    \item \textbf{\texttt{GetPath(nodeID)}}\\
+    Fungsi ini menghasilkan jalur dari suatu node menuju root dengan terus mengikuti
+    parent langsung, yaitu \texttt{Up[nodeID][0]}. Fungsi ini sangat berguna untuk
+    menampilkan path pada visualisasi frontend.
+
+    \item \textbf{\texttt{FindLCA(idA, idB)}}\\
+    Fungsi ini merupakan pembungkus dari \texttt{Query}. Setelah mendapatkan ID LCA,
+    fungsi ini langsung mengembalikan pointer ke \texttt{DOMNode} melalui array
+    \texttt{Nodes}. Dengan demikian, hasil query dapat langsung digunakan pada sisi aplikasi.
+\end{enumerate}
+
+\subsubsection{Analisis Implementasi}
+
+Implementasi Binary Lifting ini cukup sesuai untuk kasus pohon DOM karena struktur DOM
+bersifat hierarkis dan setiap node memiliki parent tunggal. Ringkasan analisisnya dapat
+dilihat pada Tabel~\ref{tab:analisis-binary-lifting}.
+
+\begin{table}[H]
+\centering
+\caption{Analisis implementasi Binary Lifting}
+\label{tab:analisis-binary-lifting}
+\begin{tabular}{|l|p{8.8cm}|}
+\hline
+\textbf{Aspek} & \textbf{Keterangan} \\ \hline
+Struktur yang diproses & Pohon DOM hasil parsing HTML. \\ \hline
+Preprocessing & Mengisi parent langsung, depth, dan tabel ancestor. \\ \hline
+Kompleksitas preprocessing & $\mathcal{O}(N \log N)$ \\ \hline
+Kompleksitas query LCA & $\mathcal{O}(\log N)$ \\ \hline
+Kelebihan & Sangat efisien untuk banyak query LCA pada pohon yang sama. \\ \hline
+Keterbatasan & Memerlukan memori tambahan untuk menyimpan tabel \texttt{Up}. \\ \hline
+\end{tabular}
+\end{table}
+
+Secara keseluruhan, implementasi ini sudah terstruktur dengan baik. Fungsi
+\texttt{NewLCAProcessor} bertugas membangun seluruh data bantu, sedangkan
+\texttt{Query} menangani pencarian LCA secara efisien. Tambahan fungsi
+\texttt{GetPath} dan \texttt{FindLCA} juga membuat modul ini lebih mudah diintegrasikan
+dengan fitur visualisasi jalur dan penandaan node pada aplikasi.
