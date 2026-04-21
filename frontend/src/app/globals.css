@@ -1,61 +1,93 @@
 @import "tailwindcss";
 
-/* iloveTree design system */
+/* ============================================
+   OBSERVATORY DESIGN SYSTEM
+   Tubes2 Berry-Manuka — DOM Tree Explorer
+   ============================================ */
 
 :root {
-  --background: 220 13% 7%;
-  --foreground: 150 8% 92%;
+  /* Observatory Base Palette */
+  --obs-base: #030508;
+  --obs-base-rgb: 3, 5, 8;
+  --obs-panel: rgba(6, 12, 22, 0.72);
+  --obs-panel-solid: #060c16;
 
-  --card: 220 13% 9%;
-  --card-foreground: 150 8% 92%;
+  /* Primary — Electric Cyan */
+  --obs-primary: #00e5ff;
+  --obs-primary-rgb: 0, 229, 255;
+  --obs-primary-dim: rgba(0, 229, 255, 0.15);
+  --obs-primary-soft: rgba(0, 229, 255, 0.08);
 
-  --popover: 220 13% 9%;
-  --popover-foreground: 150 8% 92%;
+  /* Accent — Amber */
+  --obs-accent: #ff9e00;
+  --obs-accent-rgb: 255, 158, 0;
+  --obs-accent-dim: rgba(255, 158, 0, 0.15);
 
-  --primary: 142 55% 48%;
-  --primary-foreground: 220 13% 7%;
-  --primary-glow: 142 70% 60%;
-  --primary-muted: 142 30% 25%;
+  /* State Colors */
+  --obs-visited: #00ffc8;
+  --obs-visited-rgb: 0, 255, 200;
+  --obs-current: #ffd700;
+  --obs-current-rgb: 255, 215, 0;
+  --obs-match: #ff9e00;
+  --obs-match-rgb: 255, 158, 0;
 
-  --secondary: 220 10% 14%;
-  --secondary-foreground: 150 8% 88%;
+  /* Text */
+  --obs-text-main: #e0f7ff;
+  --obs-text-main-rgb: 224, 247, 255;
+  --obs-text-muted: #6b8fa3;
+  --obs-text-muted-rgb: 107, 143, 163;
 
-  --muted: 220 10% 12%;
-  --muted-foreground: 220 8% 55%;
+  /* Borders */
+  --obs-border: rgba(0, 229, 255, 0.12);
+  --obs-border-glow: rgba(0, 229, 255, 0.35);
+  --obs-border-subtle: rgba(0, 229, 255, 0.06);
 
-  --accent: 142 40% 35%;
-  --accent-foreground: 150 8% 95%;
-
+  /* Legacy shadcn variable remapping (for compatibility) */
+  --background: 220 40% 2%;
+  --foreground: 195 100% 94%;
+  --card: 220 40% 5%;
+  --card-foreground: 195 100% 94%;
+  --popover: 220 40% 5%;
+  --popover-foreground: 195 100% 94%;
+  --primary: 187 100% 50%;
+  --primary-foreground: 220 40% 2%;
+  --secondary: 220 20% 10%;
+  --secondary-foreground: 195 100% 88%;
+  --muted: 220 15% 8%;
+  --muted-foreground: 200 20% 45%;
+  --accent: 187 100% 50%;
+  --accent-foreground: 195 100% 95%;
   --destructive: 0 70% 55%;
   --destructive-foreground: 0 0% 98%;
-
-  --border: 220 10% 16%;
-  --input: 220 10% 14%;
-  --ring: 142 55% 48%;
-
+  --border: 187 100% 50% / 0.12;
+  --input: 220 20% 10%;
+  --ring: 187 100% 50%;
   --radius: 0.625rem;
 }
 
+/* ============================================
+   BASE STYLES
+   ============================================ */
+
 html {
   font-feature-settings: "ss01", "cv11";
+  background-color: var(--obs-base);
 }
 
 body {
   margin: 0;
   min-height: 100vh;
-  background-color: hsl(var(--background));
-  color: hsl(var(--foreground));
-  font-family: Inter, system-ui, -apple-system, sans-serif;
+  background-color: var(--obs-base);
+  color: var(--obs-text-main);
+  font-family: "Space Grotesk", system-ui, -apple-system, sans-serif;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
-  background-image:
-    radial-gradient(circle at 20% 0%, hsl(142 55% 48% / 0.06), transparent 40%),
-    radial-gradient(circle at 80% 100%, hsl(142 55% 48% / 0.04), transparent 40%);
+  overflow-x: hidden;
 }
 
 * {
   box-sizing: border-box;
-  border-color: hsl(var(--border));
+  border-color: var(--obs-border);
 }
 
 a {
@@ -63,51 +95,297 @@ a {
   text-decoration: none;
 }
 
+/* ============================================
+   TYPOGRAPHY UTILITIES
+   ============================================ */
+
 .font-display {
-  font-family: "Space Grotesk", Inter, sans-serif;
-  letter-spacing: -0.02em;
+  font-family: "Orbitron", "Space Grotesk", sans-serif;
+  letter-spacing: 0.02em;
+}
+
+.font-heading {
+  font-family: "Exo 2", "Space Grotesk", sans-serif;
+  letter-spacing: 0.04em;
+}
+
+.font-body {
+  font-family: "Space Grotesk", system-ui, sans-serif;
 }
 
 .font-mono {
   font-family: "JetBrains Mono", ui-monospace, monospace;
+  letter-spacing: 0.02em;
 }
 
+/* ============================================
+   GRADIENT & GLOW UTILITIES
+   ============================================ */
+
 .text-gradient {
-  background-image: linear-gradient(135deg, hsl(150 8% 98%), hsl(142 55% 70%));
+  background-image: linear-gradient(135deg, var(--obs-text-main), var(--obs-primary));
   -webkit-background-clip: text;
   background-clip: text;
   color: transparent;
 }
 
+.text-gradient-accent {
+  background-image: linear-gradient(135deg, var(--obs-primary), var(--obs-accent));
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+}
+
+.text-glow-cyan {
+  text-shadow: 0 0 12px rgba(var(--obs-primary-rgb), 0.5),
+    0 0 24px rgba(var(--obs-primary-rgb), 0.25);
+}
+
+.text-glow-amber {
+  text-shadow: 0 0 12px rgba(var(--obs-accent-rgb), 0.5),
+    0 0 24px rgba(var(--obs-accent-rgb), 0.25);
+}
+
+/* ============================================
+   GLASSMORPHISM PANEL
+   ============================================ */
+
+.glass-panel {
+  background: var(--obs-panel);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border: 1px solid var(--obs-border);
+}
+
+.glass-panel-strong {
+  background: rgba(6, 12, 22, 0.85);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border: 1px solid var(--obs-border);
+}
+
+/* ============================================
+   BACKGROUND EFFECTS
+   ============================================ */
+
 .grid-bg {
   background-image:
-    linear-gradient(hsl(var(--border) / 0.4) 1px, transparent 1px),
-    linear-gradient(90deg, hsl(var(--border) / 0.4) 1px, transparent 1px);
+    linear-gradient(rgba(var(--obs-primary-rgb), 0.04) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(var(--obs-primary-rgb), 0.04) 1px, transparent 1px);
   background-size: 48px 48px;
   mask-image: radial-gradient(ellipse at center, black 30%, transparent 75%);
+  -webkit-mask-image: radial-gradient(ellipse at center, black 30%, transparent 75%);
 }
 
-.soft-panel {
-  background: hsl(var(--card) / 0.35);
-  backdrop-filter: blur(10px);
-  border: 1px solid hsl(var(--border) / 0.7);
+.radial-glow {
+  background: radial-gradient(circle at 50% 40%, rgba(var(--obs-primary-rgb), 0.04), transparent 60%);
 }
 
-.nav-link {
-  font-size: 18px; /* biar lebih jelas */
-  font-weight: 500;
-  color: #e5e7eb;
+/* ============================================
+   ANIMATIONS & KEYFRAMES
+   ============================================ */
+
+@keyframes nodePulse {
+  0%, 100% {
+    box-shadow: 0 0 12px rgba(var(--obs-current-rgb), 0.3),
+      0 0 24px rgba(var(--obs-current-rgb), 0.15);
+  }
+  50% {
+    box-shadow: 0 0 20px rgba(var(--obs-current-rgb), 0.5),
+      0 0 40px rgba(var(--obs-current-rgb), 0.25);
+  }
+}
+
+@keyframes edgePulse {
+  0%, 100% {
+    stroke-opacity: 0.85;
+    filter: drop-shadow(0 0 6px rgba(var(--obs-primary-rgb), 0.4));
+  }
+  50% {
+    stroke-opacity: 1;
+    filter: drop-shadow(0 0 12px rgba(var(--obs-primary-rgb), 0.7));
+  }
+}
+
+@keyframes shimmerSweep {
+  0% {
+    transform: translateX(-100%);
+  }
+  100% {
+    transform: translateX(100%);
+  }
+}
+
+@keyframes float {
+  0%, 100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-4px);
+  }
+}
+
+@keyframes fadeInUp {
+  from {
+    opacity: 0;
+    transform: translateY(12px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes statFlash {
+  0%, 100% {
+    color: var(--obs-primary);
+  }
+  50% {
+    color: var(--obs-text-main);
+  }
+}
+
+.animate-node-pulse {
+  animation: nodePulse 1.2s ease-in-out infinite;
+}
+
+.animate-edge-pulse {
+  animation: edgePulse 1.5s ease-in-out infinite;
+}
+
+.animate-shimmer {
   position: relative;
-  transition: all 0.25s ease;
+  overflow: hidden;
 }
 
-.nav-link:hover {
-  color: #22c55e; /* hijau */
-  transform: translateY(-2px) scale(1.05);
-  text-shadow: 0 0 8px rgba(34, 197, 94, 0.6);
+.animate-shimmer::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(
+    90deg,
+    transparent,
+    rgba(255, 255, 255, 0.1),
+    transparent
+  );
+  transform: translateX(-100%);
+  animation: shimmerSweep 2s ease-in-out infinite;
 }
 
+.animate-float {
+  animation: float 3s ease-in-out infinite;
+}
 
-.soft-glow {
-  box-shadow: 0 0 40px hsl(var(--primary) / 0.08);
+.animate-fade-in-up {
+  animation: fadeInUp 0.5s ease-out forwards;
+}
+
+.animate-stat-flash {
+  animation: statFlash 0.4s ease;
+}
+
+/* ============================================
+   BUTTON STYLES
+   ============================================ */
+
+.btn-primary {
+  position: relative;
+  background: linear-gradient(135deg, var(--obs-primary), #00b4dc);
+  color: var(--obs-base);
+  font-weight: 700;
+  border: none;
+  border-radius: 0.75rem;
+  padding: 0.75rem 1.5rem;
+  font-family: "Space Grotesk", sans-serif;
+  cursor: pointer;
+  transition: all 0.2s ease-out;
+  overflow: hidden;
+}
+
+.btn-primary:hover {
+  transform: scale(1.02);
+  box-shadow: 0 0 30px rgba(var(--obs-primary-rgb), 0.35),
+    0 0 60px rgba(var(--obs-primary-rgb), 0.15);
+}
+
+.btn-primary:active {
+  transform: scale(0.98);
+}
+
+.btn-primary:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+  box-shadow: none;
+  transform: none;
+}
+
+/* ============================================
+   INPUT STYLES
+   ============================================ */
+
+.input-obs {
+  width: 100%;
+  border-radius: 1rem;
+  border: 1px solid var(--obs-border);
+  background: rgba(var(--obs-primary-rgb), 0.03);
+  color: var(--obs-text-main);
+  padding: 0.75rem 1rem;
+  font-family: "Space Grotesk", sans-serif;
+  font-size: 0.875rem;
+  outline: none;
+  transition: all 0.2s ease;
+}
+
+.input-obs::placeholder {
+  color: var(--obs-text-muted);
+}
+
+.input-obs:focus {
+  border-color: var(--obs-border-glow);
+  box-shadow: 0 0 12px rgba(var(--obs-primary-rgb), 0.15);
+}
+
+/* ============================================
+   SCROLLBAR STYLING
+   ============================================ */
+
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  background: var(--obs-border);
+  border-radius: 3px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: var(--obs-border-glow);
+}
+
+/* ============================================
+   REDUCED MOTION
+   ============================================ */
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}
+
+/* ============================================
+   SELECTION
+   ============================================ */
+
+::selection {
+  background: rgba(var(--obs-primary-rgb), 0.25);
+  color: var(--obs-text-main);
 }
