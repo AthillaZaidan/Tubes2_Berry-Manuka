@@ -2,11 +2,10 @@
 
 import Starfield from "@/components/Starfield";
 import MultithreadToggle from "@/components/MultithreadToggle";
-import LCAFinder from "@/components/LCAFinder";
 import { motion } from "framer-motion";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { DOMNode, TraversalLogEntry, TraversalStats } from "@/lib/types";
-import { scrapeHTML, traverseTree } from "@/lib/api";
+import { scrapeHTML, traverseTree, findLCA } from "@/lib/api";
 
 type NodeState = "default" | "visited" | "current" | "match";
 
@@ -172,11 +171,19 @@ function NodePill({
   node,
   state,
   selected,
+  lcaA,
+  lcaB,
+  lcaResult,
+  lcaPath,
   onClick,
 }: {
   node: DOMNode;
   state: NodeState;
   selected: boolean;
+  lcaA: boolean;
+  lcaB: boolean;
+  lcaResult: boolean;
+  lcaPath: boolean;
   onClick: () => void;
 }) {
   const stateClass =
@@ -188,6 +195,18 @@ function NodePill({
       ? "border-[rgba(0,255,200,0.5)] bg-[rgba(0,255,200,0.08)] text-[#00ffc8] shadow-[0_0_12px_rgba(0,255,200,0.25)]"
       : "border-[rgba(0,229,255,0.25)] bg-[rgba(10,20,35,0.88)] text-[#e0f7ff] hover:border-[rgba(0,229,255,0.5)]";
 
+  const lcaClass = lcaResult
+    ? "border-[rgba(139,92,246,0.9)] bg-[rgba(139,92,246,0.2)] text-[#e0f7ff] shadow-[0_0_28px_rgba(139,92,246,0.6)]"
+    : lcaA
+    ? "border-[rgba(139,92,246,0.8)] bg-[rgba(139,92,246,0.12)] text-[#c4b5fd] shadow-[0_0_16px_rgba(139,92,246,0.35)]"
+    : lcaB
+    ? "border-[rgba(139,92,246,0.8)] bg-[rgba(139,92,246,0.12)] text-[#c4b5fd] shadow-[0_0_16px_rgba(139,92,246,0.35)]"
+    : lcaPath
+    ? "border-[rgba(139,92,246,0.4)] bg-[rgba(139,92,246,0.06)] text-[#a78bfa]"
+    : "";
+
+  const effectiveClass = lcaA || lcaB || lcaResult || lcaPath ? lcaClass : stateClass;
+
   return (
     <motion.button
       type="button"
@@ -195,9 +214,12 @@ function NodePill({
       whileHover={{ scale: 1.06, y: -2 }}
       whileTap={{ scale: 0.95 }}
       className={`min-w-[86px] rounded-xl border px-4 py-2 text-xs font-mono font-semibold tracking-[0.03em] transition-all duration-300 ${
-        selected ? "ring-2 ring-[#00e5ff]" : ""
-      } ${stateClass}`}
+        selected && !lcaA && !lcaB && !lcaResult && !lcaPath ? "ring-2 ring-[#00e5ff]" : ""
+      } ${effectiveClass}`}
     >
+      {lcaA && <span className="mr-1 text-[#c4b5fd]">A:</span>}
+      {lcaB && <span className="mr-1 text-[#c4b5fd]">B:</span>}
+      {lcaResult && <span className="mr-1 text-[#e0f7ff]">★</span>}
       {"<"}
       {node.tag}
       {">"}
@@ -213,6 +235,10 @@ function TreeCanvas({
   matchIds,
   onSelectNode,
   zoom,
+  lcaNodeA,
+  lcaNodeB,
+  lcaResultNodeId,
+  lcaPathNodeIds,
 }: {
   tree: DOMNode;
   selectedNodeId: number | null;
@@ -221,6 +247,10 @@ function TreeCanvas({
   matchIds: number[];
   onSelectNode: (node: DOMNode) => void;
   zoom: number;
+  lcaNodeA: number | null;
+  lcaNodeB: number | null;
+  lcaResultNodeId: number | null;
+  lcaPathNodeIds: number[];
 }) {
   const viewportRef = useRef<HTMLDivElement | null>(null);
   const [viewportSize, setViewportSize] = useState({ width: 0, height: 0 });
@@ -347,6 +377,10 @@ function TreeCanvas({
                     node={node}
                     state={state}
                     selected={selectedNodeId === node.id}
+                    lcaA={lcaNodeA === node.id}
+                    lcaB={lcaNodeB === node.id}
+                    lcaResult={lcaResultNodeId === node.id}
+                    lcaPath={lcaPathNodeIds.includes(node.id)}
                     onClick={() => onSelectNode(node)}
                   />
                 </div>
@@ -384,6 +418,13 @@ export default function ExplorerPage() {
   const [selectedNodeId, setSelectedNodeId] = useState<number | null>(null);
   const [executionMs, setExecutionMs] = useState(0);
   const [bottomTab, setBottomTab] = useState<"logs" | "inspector">("logs");
+
+  const [lcaMode, setLcaMode] = useState(false);
+  const [lcaNodeA, setLcaNodeA] = useState<number | null>(null);
+  const [lcaNodeB, setLcaNodeB] = useState<number | null>(null);
+  const [lcaResultNodeId, setLcaResultNodeId] = useState<number | null>(null);
+  const [lcaPathNodeIds, setLcaPathNodeIds] = useState<number[]>([]);
+  const [lcaLoading, setLcaLoading] = useState(false);
 
   const [animationRunning, setAnimationRunning] = useState(false);
   const [animationIndex, setAnimationIndex] = useState(0);
@@ -739,7 +780,78 @@ export default function ExplorerPage() {
 
               <div className="mt-5 space-y-3">
                 <MultithreadToggle enabled={parallelMode} onChange={setParallelMode} />
-                <LCAFinder tree={tree} />
+
+                {/* Interactive LCA Mode */}
+                <div className="rounded-xl border border-[rgba(139,92,246,0.25)] bg-[rgba(139,92,246,0.06)] p-4">
+                  <div className="mb-3 flex items-center justify-between">
+                    <span className="text-sm font-semibold text-[#c4b5fd]">LCA Finder</span>
+                    <button
+                      onClick={() => {
+                        if (lcaMode) {
+                          // Turn off: reset everything
+                          setLcaMode(false);
+                          setLcaNodeA(null);
+                          setLcaNodeB(null);
+                          setLcaResultNodeId(null);
+                          setLcaPathNodeIds([]);
+                        } else {
+                          setLcaMode(true);
+                        }
+                      }}
+                      className={`relative h-6 w-10 rounded-full transition-colors ${
+                        lcaMode ? "bg-[rgba(139,92,246,0.4)]" : "bg-[rgba(107,143,163,0.2)]"
+                      }`}
+                    >
+                      <motion.div
+                        className="absolute top-0.5 h-4 w-4 rounded-full"
+                        style={{ background: lcaMode ? "#c4b5fd" : "#6b8fa3" }}
+                        animate={{ left: lcaMode ? "22px" : "2px" }}
+                        transition={{ type: "spring", stiffness: 500, damping: 30 }}
+                      />
+                    </button>
+                  </div>
+
+                  {lcaMode && (
+                    <motion.div
+                      initial={{ opacity: 0, height: 0 }}
+                      animate={{ opacity: 1, height: "auto" }}
+                      className="space-y-2"
+                    >
+                      <p className="text-xs text-[#a78bfa]">
+                        Klik 2 node di tree untuk mencari LCA.
+                      </p>
+                      <div className="flex items-center gap-2 text-xs">
+                        <span className={`rounded-md px-2 py-1 ${lcaNodeA !== null ? "bg-[rgba(139,92,246,0.2)] text-[#c4b5fd]" : "text-[#6b8fa3]"}`}>
+                          A: {lcaNodeA !== null ? `#${lcaNodeA}` : "—"}
+                        </span>
+                        <span className={`rounded-md px-2 py-1 ${lcaNodeB !== null ? "bg-[rgba(139,92,246,0.2)] text-[#c4b5fd]" : "text-[#6b8fa3]"}`}>
+                          B: {lcaNodeB !== null ? `#${lcaNodeB}` : "—"}
+                        </span>
+                      </div>
+                      {lcaLoading && (
+                        <p className="text-xs text-[#a78bfa]">Menghitung LCA...</p>
+                      )}
+                      {lcaResultNodeId !== null && !lcaLoading && (
+                        <div className="rounded-lg bg-[rgba(139,92,246,0.12)] p-2">
+                          <p className="text-xs text-[#c4b5fd]">
+                            LCA: <span className="font-mono font-bold">#{lcaResultNodeId}</span>
+                          </p>
+                        </div>
+                      )}
+                      <button
+                        onClick={() => {
+                          setLcaNodeA(null);
+                          setLcaNodeB(null);
+                          setLcaResultNodeId(null);
+                          setLcaPathNodeIds([]);
+                        }}
+                        className="w-full rounded-lg border border-[rgba(139,92,246,0.2)] px-2 py-1.5 text-xs text-[#a78bfa] transition hover:bg-[rgba(139,92,246,0.1)]"
+                      >
+                        Reset Selection
+                      </button>
+                    </motion.div>
+                  )}
+                </div>
               </div>
             </div>
           </div>
@@ -873,10 +985,43 @@ export default function ExplorerPage() {
                   visitedIds={visitedIds}
                   matchIds={matchIds}
                   onSelectNode={(node) => {
+                    if (lcaMode) {
+                      if (lcaNodeA === null) {
+                        setLcaNodeA(node.id);
+                      } else if (lcaNodeB === null && lcaNodeA !== node.id) {
+                        setLcaNodeB(node.id);
+                        // Auto-trigger LCA calculation
+                        setLcaLoading(true);
+                        findLCA({ tree, nodeIdA: lcaNodeA, nodeIdB: node.id })
+                          .then((res) => {
+                            setLcaResultNodeId(res.lcaNode.id);
+                            const pathSet = new Set<number>([...res.pathA, ...res.pathB]);
+                            pathSet.delete(res.lcaNode.id);
+                            setLcaPathNodeIds(Array.from(pathSet));
+                          })
+                          .catch((err) => {
+                            alert(err.message || "Gagal mencari LCA");
+                          })
+                          .finally(() => {
+                            setLcaLoading(false);
+                          });
+                      } else if (lcaNodeA === node.id || lcaNodeB === node.id) {
+                        // Deselect if clicked again
+                        if (lcaNodeA === node.id) setLcaNodeA(null);
+                        if (lcaNodeB === node.id) setLcaNodeB(null);
+                        setLcaResultNodeId(null);
+                        setLcaPathNodeIds([]);
+                      }
+                      return;
+                    }
                     setSelectedNodeId(node.id);
                     setBottomTab("inspector");
                   }}
                   zoom={zoom}
+                  lcaNodeA={lcaNodeA}
+                  lcaNodeB={lcaNodeB}
+                  lcaResultNodeId={lcaResultNodeId}
+                  lcaPathNodeIds={lcaPathNodeIds}
                 />
               ) : (
                 <div className="pt-10 text-[#6b8fa3]">
