@@ -26,7 +26,7 @@ const itemVariants = {
 export default function HomePage() {
   return (
     <motion.section
-      className="relative flex min-h-[calc(100vh-140px)] items-center justify-center overflow-hidden"
+      className="relative flex h-screen items-center justify-center overflow-hidden"
       variants={containerVariants}
       initial="hidden"
       animate="visible"

@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import "./globals.css";
 import Navbar from "@/components/Navbar";
-import Footer from "@/components/Footer";
+import FooterWrapper from "@/components/FooterWrapper";
 import { Geist } from "next/font/google";
 import { cn } from "@/lib/utils";
 
@@ -34,7 +34,7 @@ export default function RootLayout({
         <div className="min-h-screen">
           <Navbar />
           <main>{children}</main>
-          <Footer />
+          <FooterWrapper />
         </div>
       </body>
     </html>
