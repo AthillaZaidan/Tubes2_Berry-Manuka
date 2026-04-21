@@ -11,7 +11,7 @@ export default function Footer() {
         <div className="flex items-center gap-3">
           <img
             src="/logo-tree.ico"
-            alt="iloveTree logo"
+            alt="Berry-Manuka logo"
             className="h-11 w-11 object-contain"
           />
           <p>
@@ -19,7 +19,7 @@ export default function Footer() {
               className="font-semibold"
               style={{ color: "#e0f7ff" }}
             >
-              iloveTree
+              Berry-Manuka
             </span>{" "}
             <span style={{ color: "#6b8fa3" }}>— DOM Tree Explorer</span>
           </p>

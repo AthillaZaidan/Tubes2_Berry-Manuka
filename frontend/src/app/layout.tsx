@@ -4,7 +4,7 @@ import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
 
 export const metadata: Metadata = {
-  title: "iloveTree — DOM Observatory",
+  title: "Berry-Manuka — DOM Observatory",
   description: "Explore and visualize DOM trees using BFS and DFS traversal",
   icons: {
     icon: "/logo-tree.ico",

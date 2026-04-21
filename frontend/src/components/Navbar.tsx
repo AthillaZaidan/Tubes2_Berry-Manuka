@@ -28,7 +28,7 @@ export default function Navbar() {
         >
           <img
             src="/logo-tree.ico"
-            alt="iloveTree logo"
+            alt="Berry-Manuka logo"
             className="h-12 w-12 object-contain md:h-14 md:w-14"
           />
           <span style={{ fontFamily: "Orbitron, sans-serif", color: "#e0f7ff" }}>
