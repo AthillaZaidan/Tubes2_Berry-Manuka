@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import "./globals.css";
-import Navbar from "@/components/Navbar";
+import NavbarWrapper from "@/components/NavbarWrapper";
 import FooterWrapper from "@/components/FooterWrapper";
 import { Geist } from "next/font/google";
 import { cn } from "@/lib/utils";
@@ -32,7 +32,7 @@ export default function RootLayout({
       </head>
       <body className="antialiased">
         <div className="min-h-screen">
-          <Navbar />
+          <NavbarWrapper />
           <main>{children}</main>
           <FooterWrapper />
         </div>

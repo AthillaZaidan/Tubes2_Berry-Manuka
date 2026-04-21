@@ -2,6 +2,8 @@
 
 import Link from "next/link";
 import { motion } from "framer-motion";
+import MeshBackground from "@/components/MeshBackground";
+import TextPressure from "@/components/TextPressure";
 
 const containerVariants = {
   hidden: { opacity: 0 },
@@ -25,55 +27,49 @@ const itemVariants = {
 
 export default function HomePage() {
   return (
-    <motion.section
-      className="relative flex h-screen items-center justify-center overflow-hidden"
-      variants={containerVariants}
-      initial="hidden"
-      animate="visible"
-    >
-      <div className="mx-auto max-w-3xl px-6 text-center">
-        <div className="space-y-6">
-          <motion.div variants={itemVariants}>
-            <h1 className="font-display text-[64px] font-bold leading-[0.9] tracking-[-0.03em] md:text-[88px] lg:text-[110px]">
-              <span className="text-gradient drop-shadow-[0_0_25px_rgba(34,197,94,0.25)]">
-                Berry-Manuka
-              </span>
-            </h1>
-          </motion.div>
-          <motion.div variants={itemVariants}>
-            <p className="text-base md:text-lg max-w-xl mx-auto leading-8 text-muted-foreground">
-              Explore and visualize DOM trees using BFS and DFS traversal
-              with CSS selectors in a clean interactive interface.
-            </p>
-          </motion.div>
+    <section className="relative h-screen overflow-hidden">
+      {/* Pure CSS animated mesh background */}
+      <MeshBackground />
 
-          <motion.div variants={itemVariants} className="pt-4">
+      <motion.div
+        className="relative z-10 flex h-full items-center justify-center"
+        variants={containerVariants}
+        initial="hidden"
+        animate="visible"
+      >
+        <div className="mx-auto max-w-4xl px-6 text-center">
+          <div className="space-y-8">
+            {/* TextPressure title — plain cyan with neon glow */}
+            <motion.div variants={itemVariants} className="h-[120px] md:h-[160px]">
+              <TextPressure
+                text="BERRY-MANUKA"
+                textColor="#00e5ff"
+                flex
+                width
+                weight
+                italic
+                minFontSize={32}
+              />
+            </motion.div>
+
+            <motion.div variants={itemVariants}>
+              <p className="text-base md:text-lg max-w-xl mx-auto leading-8 text-[#a0b4c4]">
+                Explore and visualize DOM trees using BFS and DFS traversal
+                with CSS selectors in a clean interactive interface.
+              </p>
+            </motion.div>
+
+            <motion.div variants={itemVariants} className="pt-4">
             <Link
               href="/explorer"
-              className="inline-flex items-center rounded-xl bg-primary px-6 py-3 font-medium text-primary-foreground shadow-[0_0_30px_hsl(var(--primary)/0.15)] transition hover:scale-[1.03] hover:opacity-95"
+              className="inline-flex items-center rounded-xl bg-[#00e5ff] px-10 py-5 text-lg font-semibold text-[#030508] shadow-[0_0_40px_rgba(0,229,255,0.35),0_0_80px_rgba(0,229,255,0.15)] transition hover:scale-[1.04] hover:shadow-[0_0_50px_rgba(0,229,255,0.45),0_0_100px_rgba(0,229,255,0.2)]"
             >
               Open Explorer
             </Link>
-          </motion.div>
+            </motion.div>
+          </div>
         </div>
-      </div>
-
-      {/* subtle background glow */}
-      <motion.div
-        className="pointer-events-none absolute inset-0 -z-10"
-        style={{
-          background: "radial-gradient(circle at center, rgba(0, 229, 255, 0.08), transparent 60%)",
-        }}
-        animate={{
-          scale: [1, 1.1, 1],
-          opacity: [0.6, 0.8, 0.6],
-        }}
-        transition={{
-          duration: 6,
-          repeat: Infinity,
-          ease: "easeInOut",
-        }}
-      />
-    </motion.section>
+      </motion.div>
+    </section>
   );
 }
