@@ -1,4 +1,9 @@
-PRD_Tubes2_Detail.md
+# Exclude all markdown except README
+*.md
+!README.md
+
+# Exclude docs/superpowers folder
+docs/superpowers/
 
 # LaTeX intermediate and build files
 *.aux
