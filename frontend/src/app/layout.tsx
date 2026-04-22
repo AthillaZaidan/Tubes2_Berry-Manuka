@@ -8,7 +8,7 @@ import { cn } from "@/lib/utils";
 const geist = Geist({subsets:['latin'],variable:'--font-sans'});
 
 export const metadata: Metadata = {
-  title: "Berry-Manuka — DOM Observatory",
+  title: "Berry-Manuka",
   description: "Explore and visualize DOM trees using BFS and DFS traversal",
   icons: {
     icon: "/logo-tree.ico",
