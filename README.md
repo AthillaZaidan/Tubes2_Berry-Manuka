@@ -2,8 +2,8 @@
 
 <p align="center">
   <strong>DOM Tree Explorer dengan Algoritma BFS dan DFS</strong><br>
-  <em>Tugas Besar 2 — IF2211 Strategi Algoritma</em><br>
-  <em>Institut Teknologi Bandung — Semester II 2025/2026</em>
+  <em>Tugas Besar 2 IF2211 Strategi Algoritma</em><br>
+  <em>Institut Teknologi Bandung Semester II 2025/2026</em>
 </p>
 
 <p align="center">
@@ -17,7 +17,7 @@
 
 ---
 
-## 🎯 Deskripsi Proyek
+## Deskripsi Proyek
 
 **Berry-Manuka** adalah aplikasi web interaktif untuk menelusuri dan memvisualisasikan pohon **Document Object Model (DOM)** menggunakan algoritma **Breadth-First Search (BFS)** dan **Depth-First Search (DFS)**. Aplikasi ini menerima input berupa URL website atau teks HTML mentah, memparse-nya menjadi struktur pohon DOM, dan melakukan penelusuran untuk menemukan elemen-elemen yang cocok dengan **CSS Selector** yang diberikan pengguna.
 
@@ -25,7 +25,7 @@ Proyek ini dikembangkan untuk memenuhi Tugas Besar 2 mata kuliah **IF2211 Strate
 
 ---
 
-## ✨ Fitur
+## Fitur
 
 ### Fitur Wajib
 
@@ -50,7 +50,6 @@ Proyek ini dikembangkan untuk memenuhi Tugas Besar 2 mata kuliah **IF2211 Strate
 | **LCA Binary Lifting** | 3 | ✅ | Klik 2 node di pohon, backend menghitung Lowest Common Ancestor dengan preprocessing O(N log N) |
 | **Docker** | 2 | ✅ | Multi-stage Dockerfile untuk frontend dan backend + `docker-compose.yml` |
 | **Deploy Azure VM** | 5 | ✅ | Deployed di Microsoft Azure Virtual Machine dengan IP publik |
-| **Video YouTube** | 4 | ⏳ | Sedang dalam tahap produksi |
 
 ---
 
@@ -136,7 +135,7 @@ Aplikasi telah di-deploy ke Microsoft Azure Virtual Machine:
 
 ---
 
-## 📡 API Endpoints
+## API Endpoints
 
 ### `POST /api/scrape`
 Menerima URL atau raw HTML dan mengembalikan parsed DOM tree.
@@ -251,14 +250,10 @@ Tubes2_Berry-Manuka/
 
 ---
 
-## 🎨 Screenshot
-
-### Landing Page
+## Landing Page
 <p align="center">
   <img src="docs/screenshots/landing-page.png" alt="Landing Page Berry-Manuka" width="800">
 </p>
-
-*Landing page dengan animasi Mesh Background dan efek TextPressure pada judul "BERRY-MANUKA"*
 
 ---
 
@@ -279,17 +274,3 @@ Tubes2_Berry-Manuka/
 - [Go Documentation](https://go.dev/doc/)
 - [Next.js Documentation](https://nextjs.org/docs)
 
----
-
-## 📝 Catatan
-
-- **Tokenizer HTML:** Menggunakan library eksternal `golang.org/x/net/html` sesuai dengan ketentuan asisten praktikum.
-- **Konversi ke DOM Tree:** Diimplementasikan secara manual dengan stack-based tree builder.
-- **CSS Selector:** Diimplementasikan secara manual (parser + matcher), bukan menggunakan library high-level seperti `goquery`.
-- **Deployment:** VM di Azure harus di-**Stop (Deallocate)** saat tidak digunakan untuk menghemat kredit Azure for Students.
-
----
-
-<p align="center">
-  <sub>Built with ❤️ by Berry-Manuka Team — 2026</sub>
-</p>
