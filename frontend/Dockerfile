@@ -1,11 +1,11 @@
 # ─── Stage 1: Builder ───────────────────────────────────────────────
-FROM oven/bun:1-alpine AS builder
+FROM node:20-alpine AS builder
 
 WORKDIR /app
 
 # Copy package files dulu (untuk cache layer dependency)
-COPY package.json bun.lockb ./
-RUN bun install --frozen-lockfile
+COPY package.json package-lock.json ./
+RUN npm ci
 
 # Copy semua source code
 COPY . .
@@ -15,7 +15,7 @@ ARG NEXT_PUBLIC_API_URL=http://localhost:8080
 ENV NEXT_PUBLIC_API_URL=${NEXT_PUBLIC_API_URL}
 
 # Build Next.js untuk production
-RUN bun run build
+RUN npm run build
 
 # ─── Stage 2: Runner ────────────────────────────────────────────────
 FROM node:20-alpine AS runner
