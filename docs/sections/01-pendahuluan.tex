@@ -1,0 +1,151 @@
+\section{Kisah}
+
+Setiap kali seseorang membuka sebuah halaman web di peramban (\textit{browser}),
+terjadi serangkaian proses yang kompleks di balik layar. Peramban mengunduh
+dokumen \textit{HyperText Markup Language} (HTML) dari peladen web, kemudian
+mengurai dokumen tersebut menjadi sebuah struktur pohon yang disebut
+\textit{Document Object Model} (DOM). Struktur pohon inilah yang menjadi
+fondasi bagi seluruh proses selanjutnya --- mulai dari penerapan gaya
+(\textit{styling}) melalui \textit{Cascading Style Sheets} (CSS), manipulasi
+konten secara dinamis melalui JavaScript, hingga proses \textit{rendering}
+visual di layar pengguna.
+
+Salah satu mekanisme fundamental dalam pemrosesan halaman web adalah
+\textbf{pencocokan CSS Selector}. Ketika seorang pengembang web menuliskan
+aturan CSS seperti \texttt{div > p.highlight}, peramban harus menelusuri
+seluruh pohon DOM untuk menemukan elemen-elemen yang memenuhi kriteria
+tersebut. Proses penelusuran ini pada dasarnya adalah sebuah \textit{tree
+traversal} --- mengunjungi node-node dalam pohon secara sistematis hingga
+seluruh elemen yang cocok ditemukan.
+
+Dua algoritma traversal yang paling fundamental adalah \textit{Breadth-First
+Search} (BFS) dan \textit{Depth-First Search} (DFS). Kedua algoritma ini
+memiliki strategi penelusuran yang berbeda: BFS menjelajahi pohon
+secara melebar (\textit{level-by-level}), sementara DFS menjelajahi pohon
+secara mendalam (\textit{sedalam mungkin baru mundur}). Pemilihan algoritma
+traversal yang tepat dapat memengaruhi efisiensi dan urutan penemuan elemen
+yang sesuai dengan CSS Selector yang diberikan.
+
+Pada Tugas Besar 2 mata kuliah IF2211 Strategi Algoritma ini, mahasiswa
+diminta untuk membangun sebuah aplikasi web yang mengimplementasikan proses
+penelusuran CSS Selector pada pohon DOM menggunakan algoritma BFS dan DFS.
+Program yang dikembangkan diberi nama \textbf{Berry-Manuka}: aplikasi web
+interaktif yang mampu mengambil dokumen HTML dari suatu URL, mem-parse-nya
+menjadi pohon DOM, menelusuri pohon tersebut menggunakan BFS maupun DFS untuk
+mencari elemen yang cocok dengan CSS Selector tertentu, serta memvisualisasikan
+seluruh proses penelusuran secara interaktif.
+
+\section{Latar Belakang}
+
+\textit{Document Object Model} (DOM) adalah antarmuka pemrograman yang
+merepresentasikan struktur dokumen HTML dalam bentuk pohon hierarkis.
+Setiap elemen HTML dalam dokumen direpresentasikan sebagai sebuah \textit{node}
+dalam pohon, dengan hubungan \textit{parent-child-sibling} yang mencerminkan
+struktur bersarang (\textit{nesting}) dari tag-tag HTML \cite{mdn_dom}.
+Representasi pohon ini bersifat universal dan menjadi dasar bagi hampir semua
+operasi yang dilakukan peramban terhadap halaman web.
+
+Pencocokan CSS Selector merupakan operasi yang sangat sering dilakukan oleh
+peramban. Setiap kali sebuah halaman web dimuat, peramban harus mencocokkan
+setiap aturan CSS dalam \textit{stylesheet} dengan elemen-elemen yang sesuai
+di pohon DOM. Proses ini memerlukan penelusuran pohon DOM secara efisien,
+mengingat kompleksitas halaman web modern yang dapat memiliki ribuan hingga
+puluhan ribu node \cite{mdn_css_selectors}.
+
+Algoritma \textit{Breadth-First Search} (BFS) dan \textit{Depth-First Search}
+(DFS) merupakan dua strategi penelusuran graf dan pohon yang paling dasar dan
+penting dalam ilmu komputer \cite{cormen2009introduction}. Kedua algoritma ini
+memiliki karakteristik yang berbeda dalam hal urutan kunjungan node, penggunaan
+memori, dan kesesuaian dengan jenis pencarian tertentu. Pemahaman mendalam
+mengenai perbedaan keduanya sangat penting dalam konteks penelusuran pohon DOM.
+
+Visualisasi interaktif dari proses penelusuran pohon DOM dapat membantu
+pengguna memahami cara kerja algoritma BFS dan DFS secara lebih intuitif.
+Daripada hanya membaca pseudocode atau analisis teoritis, pengguna dapat
+mengamati secara langsung bagaimana setiap algoritma mengunjungi node-node
+dalam pohon, mengetahui node mana yang diperiksa terlebih dahulu, dan melihat
+jalur yang ditempuh hingga elemen yang dicari ditemukan.
+
+Untuk meningkatkan performa penelusuran pada pohon DOM yang berukuran besar,
+diterapkan mekanisme konkurensi menggunakan \textit{goroutine} yang disediakan
+oleh bahasa pemrograman Go. Dengan pemrosesan paralel, beberapa node dapat
+diperiksa secara bersamaan sehingga waktu penelusuran dapat dikurangi secara
+signifikan.
+
+Selain itu, diimplementasikan pula algoritma \textit{Lowest Common Ancestor}
+(LCA) dengan metode \textit{Binary Lifting} untuk menentukan ancestor bersama
+terdekat dari dua buah node dalam pohon DOM. Algoritma ini memiliki
+kompleksitas query sebesar $O(\log N)$, jauh lebih efisien dibandingkan
+pendekatan naif yang memiliki kompleksitas $O(N)$ per query
+\cite{cpalgorithms_lca}.
+
+\section{Deskripsi Tugas}
+
+Program Berry-Manuka merupakan aplikasi web yang menerima masukan berupa
+dokumen HTML --- baik melalui \textit{URL scraping} maupun input manual ---
+kemudian mem-parse dokumen tersebut menjadi pohon DOM dan menyediakan
+fasilitas penelusuran pohon menggunakan algoritma BFS atau DFS berdasarkan
+CSS Selector yang diberikan pengguna. Hasil penelusuran divisualisasikan
+secara interaktif lengkap dengan animasi proses penelusuran, statistik
+performa, dan traversal log.
+
+Program dikembangkan menggunakan bahasa pemrograman Go untuk \textit{backend}
+dan framework Next.js untuk \textit{frontend}, serta dikemas dalam
+kontainer Docker untuk memudahkan proses deployment. Program ini dikerjakan
+secara berkelompok oleh tiga orang mahasiswa.
+
+\subsection{Masukan}
+
+Program menerima beberapa parameter masukan melalui antarmuka web:
+
+\begin{enumerate}
+    \item \textbf{Sumber dokumen HTML}: dapat berupa URL website yang akan
+    di-\textit{scrape} atau teks HTML yang dimasukkan secara manual oleh
+    pengguna.
+
+    \item \textbf{Pilihan algoritma traversal}: pilihan antara
+    \textit{Breadth-First Search} (BFS) atau \textit{Depth-First Search}
+    (DFS) sebagai metode penelusuran pohon DOM.
+
+    \item \textbf{CSS Selector}: selector yang digunakan untuk mencari elemen
+    yang sesuai dalam pohon DOM. Selector yang didukung meliputi
+    \textit{tag selector} (misalnya \texttt{p}), \textit{class selector}
+    (misalnya \texttt{.highlight}), \textit{ID selector} (misalnya
+    \texttt{\#header}), dan \textit{universal selector} (\texttt{*}), serta
+    \textit{combinator} berupa child (\texttt{>}), descendant (spasi),
+    adjacent sibling (\texttt{+}), dan general sibling (\texttt{\textasciitilde}).
+
+    \item \textbf{Jumlah hasil}: banyaknya kemunculan elemen yang ingin
+    ditampilkan, baik berupa $N$ hasil pertama (\textit{top-N}) maupun
+    seluruh kemunculan.
+\end{enumerate}
+
+\subsection{Keluaran}
+
+Program menghasilkan beberapa bentuk keluaran melalui antarmuka web:
+
+\begin{enumerate}
+    \item \textbf{Visualisasi pohon DOM}: representasi visual dari struktur
+    pohon DOM hasil \textit{parsing}, lengkap dengan keterangan kedalaman
+    maksimum (\textit{maximum depth}) dari pohon tersebut.
+
+    \item \textbf{Highlight jalur traversal}: penandaan visual pada
+    node-node yang dikunjungi selama proses penelusuran, sehingga pengguna
+    dapat mengamati urutan dan jalur yang ditempuh oleh algoritma.
+
+    \item \textbf{Animasi penelusuran}: animasi langkah demi langkah dari
+    proses penelusuran pohon DOM yang menunjukkan node mana yang sedang
+    diperiksa pada setiap tahapan.
+
+    \item \textbf{Statistik performa}: informasi mengenai waktu pencarian
+    (dalam milidetik) dan banyaknya node yang dikunjungi selama proses
+    penelusuran.
+
+    \item \textbf{Traversal log}: catatan berurutan yang memuat informasi
+    setiap tahapan penelusuran, termasuk node yang dikunjungi dan status
+    pencocokan terhadap CSS Selector.
+
+    \item \textbf{Lowest Common Ancestor}: hasil pencarian ancestor bersama
+    terdekat dari dua buah node yang dipilih oleh pengguna dalam pohon DOM,
+    beserta jalur dari masing-masing node menuju ancestor tersebut.
+\end{enumerate}

@@ -4,6 +4,9 @@
 \usepackage[utf8]{inputenc}
 \usepackage[T1]{fontenc}
 \usepackage[indonesian]{babel}
+\addto\captionsindonesian{%
+  \renewcommand{\bibname}{Daftar Pustaka}
+}
 \usepackage{lipsum}
 
 % ---------- Paket matematika & gambar ----------
@@ -12,26 +15,49 @@
 \usepackage{caption}
 \usepackage{subcaption}
 \usepackage{float}
+\usepackage{algorithm}
+\usepackage{algpseudocode}
+\usepackage{listings}
+\usepackage{xcolor}
+
+\lstdefinestyle{godestyle}{
+    language=Go,
+    basicstyle=\ttfamily\small,
+    keywordstyle=\color{black},
+    commentstyle=\color{black!50!black},
+    stringstyle=\color{black!60!black},
+    numbers=left,
+    numberstyle=\tiny\color{black},
+    stepnumber=1,
+    numbersep=8pt,
+    showstringspaces=false,
+    breaklines=true,
+    frame=single,
+    tabsize=4,
+    captionpos=b
+}
+\usepackage{multicol}
 \bibliographystyle{IEEEtran}
 % ---------- Paket lain ----------
 \usepackage[most]{tcolorbox}
 \usepackage{forest}
 \usepackage{hyperref}
+\usepackage{xurl}
 \usepackage{fancyhdr}
 
 \usepackage{titlesec}
-
-\usepackage{titlesec}
 \usepackage{longtable}
+\usepackage{tabularx}
 \usepackage{array} % untuk menentukan lebar kolom
 \usepackage{booktabs} % gaya tabel lebih elegan
 \usepackage[table]{xcolor}
 
 
 
-% Tambah jarak aman dari header dan footer:	
-\setlength{\headheight}{10pt}   % wajib cukup besar untuk fancyhdr
-\setlength{\headsep}{55pt}      % jarak header ke teks
+% Tambah jarak aman dari header dan footer:
+% Header berisi logo + 3 baris teks, jadi headheight harus cukup besar agar tidak terpotong.
+\setlength{\headheight}{50pt}
+\setlength{\headsep}{20pt}
 \setlength{\footskip}{28pt}     % jarak teks ke footer
 \usepackage[a4paper,top=3cm,bottom=3cm,left=3cm,right=3cm]{geometry}
 
@@ -51,9 +77,9 @@
 	}%
 	\fancyhead[R]{%
 		\begin{minipage}{9cm}
-			\raggedleft\bfseries Kode | Nama Mata Kuliah\\
-			\normalsize Laporan Akhir Tugas Besar X\\
-			Semester X 2025/2026
+			\raggedleft\bfseries IF2211 Strategi Algoritma\\
+			\normalsize Laporan Akhir Tugas Besar 2\\
+			Semester II 2025/2026
 		\end{minipage}
 	}%
 	\renewcommand{\headrulewidth}{0.4pt}%
@@ -65,15 +91,15 @@
 
 
 \fancyhead[L]{%
-	\includegraphics[height=1.5cm]{logo-itb}\hspace{0.3cm}%
-	\includegraphics[height=1.5cm]{logo-stei}\hspace{0.3cm}%
+	\includegraphics[height=1.1cm]{logo-itb}\hspace{0.3cm}%
+	\includegraphics[height=1.1cm]{logo-stei}\hspace{0.3cm}%
 }
 
 \fancyhead[R]{%
 	\begin{minipage}{9cm}
-		\raggedleft\bfseries IF2123 Aljabar Linier dan Geometri\\
+		\raggedleft\bfseries IF2211 Strategi Algoritma\\
 		\normalsize Laporan Akhir Tugas Besar 2\\
-		\itshape Semester I 2025/2026
+		\itshape Semester II 2025/2026
 	\end{minipage}
 }
 
@@ -85,40 +111,41 @@
 \renewcommand{\footrulewidth}{0.4pt}
 
 \begin{document}
+	\hypersetup{pageanchor=false}
 	
 	\begin{titlepage}
 		\thispagestyle{empty}
 		\centering
 		
 		% ---------- Judul utama ----------
-		{\LARGE \textbf{Tugas Besar X}\par}
+		{\LARGE \textbf{Tugas Besar 2}\par}
 		\vspace{0.2cm}
-		{\LARGE \textbf{(Nama Kelompok)}\par}
+		{\LARGE \textbf{Berry-Manuka}\par}
 		\vspace{0.8cm}
-		{\large (Kode | Nama Mata Kuliah)\par}
+		{\large IF2211 Strategi Algoritma\par}
 		\vspace{0.2cm}
-		{\large (Judul Laporan)\par}
-		\vspace{0.2cm}
-		{\large Semester X Tahun 20XX/20XX\par}
+		{\large Pemanfaatan Algoritma BFS dan DFS dalam Mekanisme Penelusuran CSS pada Pohon Document Object Model\par}
+		\vspace{0.1cm}
+		{\large Semester II Tahun 2025/2026\par}
 		
 		% ---------- Gambar tengah ----------
-		\vspace{1.8cm}
-		\includegraphics[width=0.9\textwidth]{foto-kelompok}\par
+		\vspace{0.8cm}
+		\includegraphics[width=1.3\textwidth,height=0.35\textheight,keepaspectratio]{foto-kelompok.jpeg}\par
 		
 		% ---------- Disusun oleh ----------
-		\vspace{1.2cm}
+		\vspace{0.6cm}
 		{\bfseries Disusun oleh:\par}
 		\vspace{0.2cm}
-		\textbf{(Nama Kelompok)}
+		\textbf{Berry-Manuka}
 		\vspace{0.5cm} \\
 		\begin{tabular}{l l}
-			XXXXXXXXXXXXXXXXXXXXXX & (YYYYYYYY) \\
-			XXXXXXXXXXXXXXXXXXXXXX & (YYYYYYYY) \\
-			XXXXXXXXXXXXXXXXXXXXXX & (YYYYYYYY) \\
+			Agatha Tatianingseto        & (13524008) \\
+			Stefani Angeline Oroh       & (13524064) \\
+			Athilla Zaidan Zidna Fann   & (13524068) \\
 		\end{tabular}
 		
 		% ---------- Institusi ----------
-		\vspace{2.0cm}
+		\vspace{1.5cm}
 		Laboratorium Ilmu dan Rekayasa Komputasi\par
 		Program Studi Teknik Informatika\par
 		Sekolah Teknik Elektro dan Informatika\par
@@ -127,10 +154,15 @@
 	\end{titlepage}
 	
 	\clearpage
+	\pagenumbering{roman}
+	\setcounter{page}{1}
+	\hypersetup{pageanchor=true}
 	\pagestyle{fancy}
 	
 	\tableofcontents
 	\clearpage
+	\pagenumbering{arabic}
+	\setcounter{page}{1}
 	
 	\chapter{Pendahuluan}
 	\input{sections/01-pendahuluan}
@@ -138,11 +170,11 @@
 	\chapter{Dasar Teori}
 	\input{sections/02-dasar-teori}
 	
-	\chapter{Implementasi}
-	\input{sections/03-implementasi}
+	\chapter{Aplikasi BFS dan DFS}
+	\input{sections/03-aplikasi-bfs-dfs}
 	
-	\chapter{Eksperimen}
-	\input{sections/04-eksperimen}
+	\chapter{Implementasi}
+	\input{sections/04-implementasi-pengujian}
 	
 	\chapter{Penutup}
 	\input{sections/05-penutup}

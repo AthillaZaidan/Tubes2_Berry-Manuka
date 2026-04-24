@@ -1,0 +1,37 @@
+\section{Kesimpulan}
+ 
+Berdasarkan hasil implementasi dan pengujian yang telah dilakukan, dapat ditarik beberapa kesimpulan sebagai berikut.
+ 
+\begin{enumerate}
+    \item Aplikasi traversal pohon DOM berbasis web berhasil dibangun menggunakan React/Next.js pada \textit{frontend} dan Go pada \textit{backend}, dengan arsitektur \textit{client-server} melalui REST API. Aplikasi berhasil di-\textit{deploy} secara publik menggunakan Microsoft Azure Virtual Machine dan dapat diakses melalui \texttt{http://40.81.27.55:3000}.
+ 
+    \item Proses \textit{scraping} HTML dari URL eksternal dan \textit{parsing} HTML menjadi struktur pohon DOM berjalan dengan benar. Parser mampu menangani berbagai jenis elemen HTML termasuk elemen \textit{void}, atribut, dan konten teks, serta menolak input yang tidak valid dengan pesan \textit{error} yang sesuai.
+ 
+    \item Implementasi CSS \textit{selector} berhasil mendukung empat jenis \textit{selector} dasar (\textit{tag}, \textit{class}, \textit{ID}, \textit{universal}) serta empat jenis kombinator (\textit{child}, \textit{descendant}, \textit{adjacent sibling}, \textit{general sibling}) dengan mekanisme pencocokan dari kanan ke kiri yang mengikuti standar CSS.
+ 
+    \item Algoritma BFS dan DFS berhasil diimplementasikan dengan benar. BFS menelusuri pohon DOM secara \textit{level-by-level} sehingga cenderung menemukan elemen yang lebih dangkal terlebih dahulu, sedangkan DFS menelusuri secara \textit{pre-order} sehingga menyelami satu cabang hingga tuntas sebelum berpindah ke cabang berikutnya. Perbedaan perilaku keduanya terlihat jelas terutama saat parameter \textit{Top N} digunakan, di mana urutan penemuan node pertama dapat berbeda secara signifikan.
+ 
+    \item Parameter \textit{Top N} terbukti tidak sekadar memfilter tampilan hasil, melainkan secara nyata menghentikan proses traversal lebih awal sehingga mengurangi jumlah node yang dikunjungi dan mempersingkat \textit{traversal log}.
+ 
+    \item Parallel BFS berhasil memparalelkan pemrosesan seluruh node dalam satu level menggunakan \textit{goroutine}, menghasilkan kumpulan node yang identik dengan BFS sekuensial. Parallel DFS memparalelkan pemrosesan subtree di level pertama di bawah root, menghasilkan urutan traversal yang identik dengan DFS sekuensial setelah di-\textit{sort} berdasarkan indeks.
+ 
+    \item Algoritma LCA dengan teknik \textit{Binary Lifting} berhasil diimplementasikan dan dapat menemukan leluhur bersama terendah dari dua node yang dipilih melalui antarmuka visualisasi pohon DOM. \textit{Preprocessing} tabel \textit{sparse table} dengan \texttt{maxLog} = 20 memungkinkan penanganan pohon dengan kedalaman hingga $2^{20}$ level.
+ 
+    \item Seluruh 47 \textit{test case} yang dirancang berhasil dijalankan sesuai \textit{expected output}.
+\end{enumerate}
+ 
+\section{Saran}
+ 
+Berdasarkan hasil implementasi dan temuan selama pengujian, beberapa saran untuk pengembangan lebih lanjut adalah sebagai berikut.
+ 
+\begin{enumerate}
+    \item Memperluas cakupan paralelisasi Parallel DFS agar tidak hanya terbatas pada level pertama di bawah root, melainkan dapat memparalelkan pemrosesan secara rekursif pada setiap level subtree sehingga peningkatan performa lebih signifikan pada pohon DOM yang sangat besar.
+ 
+    \item Menambahkan dukungan CSS \textit{selector} yang lebih lengkap seperti \textit{attribute selector} (\texttt{[attr=value]}), \textit{pseudo-class} (\texttt{:first-child}, \texttt{:nth-child}), dan \textit{pseudo-element} untuk meningkatkan kompatibilitas dengan standar CSS yang sesungguhnya.
+ 
+    \item Menambahkan mekanisme \textit{caching} pada hasil \textit{scraping} URL yang sama sehingga permintaan berulang pada URL yang tidak berubah tidak perlu melakukan \textit{fetch} ulang ke server target.
+ 
+    \item Meningkatkan batasan ukuran HTML yang dapat diproses (saat ini 5 MB) serta menambahkan penanganan untuk halaman web yang membutuhkan eksekusi JavaScript (\textit{dynamic rendering}) menggunakan \textit{headless browser}.
+ 
+    \item Menambahkan fitur ekspor pohon DOM ke format gambar atau PDF langsung dari antarmuka web sehingga memudahkan dokumentasi hasil penelusuran.
+\end{enumerate}
