@@ -1,50 +1,3 @@
-\section{Gambaran Umum Sistem}
-
-Aplikasi yang dikembangkan merupakan sistem berbasis web yang bertujuan untuk melakukan pencarian elemen HTML pada struktur DOM berdasarkan CSS selector. Sistem ini memanfaatkan algoritma Breadth First Search (BFS) dan Depth First Search (DFS) sebagai metode traversal.
-
-\begin{tcolorbox}[colback=gray!10,title=Input dan Output Sistem]
-\textbf{Input:}
-\begin{itemize}
-    \item URL website atau teks HTML
-    \item CSS Selector
-    \item Pilihan algoritma (BFS / DFS)
-    \item Jumlah hasil
-\end{itemize}
-
-\textbf{Output:}
-\begin{itemize}
-    \item Elemen hasil pencarian
-    \item Visualisasi DOM
-    \item Jalur traversal
-    \item Waktu eksekusi
-\end{itemize}
-\end{tcolorbox}
-
----
-
-\section{Arsitektur Sistem}
-
-Sistem dibangun dengan pendekatan client-server.
-
-\begin{center}
-\begin{tabular}{|c|c|c|}
-\hline
-Frontend & $\rightarrow$ & Backend \\
-\hline
-Input user & & Parsing + BFS/DFS \\
-\hline
-Visualisasi & $\leftarrow$ & Hasil traversal \\
-\hline
-\end{tabular}
-\end{center}
-
-\begin{itemize}
-    \item Frontend: menerima input dan menampilkan hasil
-    \item Backend: melakukan parsing HTML dan traversal DOM
-\end{itemize}
-
----
-
 \section{Representasi DOM Tree}
 
 Struktur DOM direpresentasikan sebagai tree, dengan setiap node memiliki atribut sebagai berikut:
@@ -64,7 +17,7 @@ Parent & Node induk \\
 
 Struktur ini memungkinkan traversal dilakukan secara sistematis menggunakan BFS maupun DFS.
 
----
+% --------HTML PARSING--------
 
 \section{HTML Parsing}
 
@@ -81,7 +34,7 @@ Tahapan:
     \item Menyusun node dalam bentuk tree
 \end{enumerate}
 
----
+%-------
 
 \section{Implementasi CSS Selector}
 
@@ -107,7 +60,7 @@ ID & \#header & Elemen dengan id tertentu \\
     \item General Sibling (~)
 \end{itemize}
 
----
+%-------
 
 \section{Implementasi Algoritma BFS dan DFS}
 \subsection{Implementasi Algoritma BFS}
@@ -209,7 +162,8 @@ Kekurangan & Tidak selalu menemukan node yang dekat root lebih dahulu. \\ \hline
 
 Dengan demikian, implementasi DFS pada aplikasi ini menekankan traversal depth-first, sehingga jalur pencarian terlihat lebih fokus pada satu cabang sebelum berpindah ke cabang lainnya. Hal ini juga menghasilkan pola traversal log yang berbeda dibandingkan BFS.
 
----
+%-------
+
 
 \subsection{Perbandingan BFS dan DFS}
 
@@ -226,7 +180,8 @@ Memory & Lebih besar & Lebih kecil \\
 \end{tabular}
 \end{center}
 
----
+%-------
+
 
 \subsection{Analisis Kompleksitas}
 
@@ -246,7 +201,8 @@ Performa juga dipengaruhi oleh:
     \item Struktur pohon DOM
 \end{itemize}
 
----
+%-------
+
 
 \section{Implementasi Binary Lifting untuk LCA pada DOM}
 
