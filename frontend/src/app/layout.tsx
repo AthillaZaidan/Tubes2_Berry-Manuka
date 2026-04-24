@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import "./globals.css";
-import Navbar from "@/components/Navbar";
+import NavbarWrapper from "@/components/NavbarWrapper";
 import FooterWrapper from "@/components/FooterWrapper";
 import { Geist } from "next/font/google";
 import { cn } from "@/lib/utils";
@@ -8,7 +8,7 @@ import { cn } from "@/lib/utils";
 const geist = Geist({subsets:['latin'],variable:'--font-sans'});
 
 export const metadata: Metadata = {
-  title: "Berry-Manuka — DOM Observatory",
+  title: "Berry-Manuka",
   description: "Explore and visualize DOM trees using BFS and DFS traversal",
   icons: {
     icon: "/logo-tree.ico",
@@ -31,9 +31,9 @@ export default function RootLayout({
         />
       </head>
       <body className="antialiased">
-        <div className="min-h-screen">
-          <Navbar />
-          <main>{children}</main>
+        <div className="flex min-h-screen flex-col">
+          <NavbarWrapper />
+          <main className="min-h-0 flex-1">{children}</main>
           <FooterWrapper />
         </div>
       </body>

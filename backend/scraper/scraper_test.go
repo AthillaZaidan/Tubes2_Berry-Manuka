@@ -104,3 +104,21 @@ func TestFetchHTML_LargeHTML(t *testing.T) {
 		t.Errorf("expected 1024 bytes, got %d", len(result))
 	}
 }
+
+func TestFetchHTML_SendsBrowserLikeUserAgent(t *testing.T) {
+	var gotUA string
+	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		gotUA = r.Header.Get("User-Agent")
+		w.Header().Set("Content-Type", "text/html")
+		w.Write([]byte("<html><body>ok</body></html>"))
+	}))
+	defer ts.Close()
+
+	_, err := FetchHTML(ts.URL)
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if gotUA == "" {
+		t.Fatal("expected User-Agent header to be set")
+	}
+}

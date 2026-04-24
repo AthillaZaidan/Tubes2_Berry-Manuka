@@ -3,14 +3,13 @@ package traversal
 import (
 	"sort"
 	"sync"
-	"sync/atomic"
 	"time"
 
 	"tubes2/model"
 	"tubes2/selector"
 )
 
-// ParallelBFS memproses node per level 
+// ParallelBFS memproses node per level
 func ParallelBFS(root *model.DOMNode, chain model.SelectorChain, limit int) model.TraversalResult {
 	start := time.Now()
 	result := model.TraversalResult{
@@ -27,24 +26,25 @@ func ParallelBFS(root *model.DOMNode, chain model.SelectorChain, limit int) mode
 	result.MaxDepth = model.MaxDepth(root)
 
 	currentLevel := []*model.DOMNode{root}
-	var stepCounter int64
-	var visitedCount int64
-	var stop int32
-	var mu sync.Mutex
+	stepCounter := 0
+	reachedLimit := false
 
-	for len(currentLevel) > 0 && atomic.LoadInt32(&stop) == 0 {
-		nextBuckets := make([][]*model.DOMNode, len(currentLevel))
-		levelLog := make([]model.LogEntry, 0, len(currentLevel))
-		levelMatches := make([]*model.DOMNode, 0)
+	type levelResult struct {
+		entry    model.LogEntry
+		node     *model.DOMNode
+		matched  bool
+		children []*model.DOMNode
+	}
+
+	for len(currentLevel) > 0 && !reachedLimit {
+		levelResults := make([]levelResult, len(currentLevel))
 		var wg sync.WaitGroup
 
 		for idx, node := range currentLevel {
+			step := stepCounter + idx + 1
 			wg.Add(1)
-			go func(i int, n *model.DOMNode) {
+			go func(i int, n *model.DOMNode, s int) {
 				defer wg.Done()
-
-				step := int(atomic.AddInt64(&stepCounter, 1))
-				atomic.AddInt64(&visitedCount, 1)
 
 				action := "visit"
 				matched := selector.MatchChain(n, chain)
@@ -52,51 +52,40 @@ func ParallelBFS(root *model.DOMNode, chain model.SelectorChain, limit int) mode
 					action = "match"
 				}
 
-				entry := model.LogEntry{
-					Step:   step,
-					NodeID: n.ID,
-					Tag:    n.Tag,
-					Action: action,
-					Depth:  n.Depth,
+				levelResults[i] = levelResult{
+					entry: model.LogEntry{
+						Step:   s,
+						NodeID: n.ID,
+						Tag:    n.Tag,
+						Action: action,
+						Depth:  n.Depth,
+					},
+					node:     n,
+					matched:  matched,
+					children: n.Children,
 				}
-
-				mu.Lock()
-				levelLog = append(levelLog, entry)
-				if matched {
-					levelMatches = append(levelMatches, n)
-					if limit > 0 && len(result.MatchedNodes)+len(levelMatches) >= limit {
-						atomic.StoreInt32(&stop, 1)
-					}
-				}
-				mu.Unlock()
-
-				nextBuckets[i] = append(nextBuckets[i], n.Children...)
-			}(idx, node)
+			}(idx, node, step)
 		}
 
 		wg.Wait()
+		stepCounter += len(levelResults)
 
-		sort.Slice(levelLog, func(i, j int) bool {
-			return levelLog[i].Step < levelLog[j].Step
-		})
-		sort.Slice(levelMatches, func(i, j int) bool {
-			return levelMatches[i].ID < levelMatches[j].ID
-		})
-
-		result.Log = append(result.Log, levelLog...)
-		result.MatchedNodes = append(result.MatchedNodes, levelMatches...)
-		if limit > 0 && len(result.MatchedNodes) > limit {
-			result.MatchedNodes = result.MatchedNodes[:limit]
-		}
-
-		nextLevel := make([]*model.DOMNode, 0)
-		for _, bucket := range nextBuckets {
-			nextLevel = append(nextLevel, bucket...)
+		nextLevel := make([]*model.DOMNode, 0, len(currentLevel)*2)
+		for _, item := range levelResults {
+			result.Log = append(result.Log, item.entry)
+			if item.matched {
+				result.MatchedNodes = append(result.MatchedNodes, item.node)
+				if limit > 0 && len(result.MatchedNodes) >= limit {
+					reachedLimit = true
+					break
+				}
+			}
+			nextLevel = append(nextLevel, item.children...)
 		}
 		currentLevel = nextLevel
 	}
 
-	result.VisitedCount = int(visitedCount)
+	result.VisitedCount = len(result.Log)
 	result.ExecutionMs = float64(time.Since(start).Microseconds()) / 1000.0
 	return result
 }
@@ -117,7 +106,7 @@ func ParallelDFS(root *model.DOMNode, chain model.SelectorChain, limit int) mode
 	model.RebuildParentPointers(root)
 	result.MaxDepth = model.MaxDepth(root)
 
-	// Proses root dulu 
+	// Proses root dulu
 	step := 1
 	result.VisitedCount = 1
 	rootAction := "visit"
@@ -165,19 +154,30 @@ func ParallelDFS(root *model.DOMNode, chain model.SelectorChain, limit int) mode
 	})
 
 	for _, sub := range subResults {
+		matchIdx := 0
 		for _, entry := range sub.data.Log {
 			step++
 			entry.Step = step
 			result.Log = append(result.Log, entry)
-		}
-		result.VisitedCount += sub.data.VisitedCount
-		result.MatchedNodes = append(result.MatchedNodes, sub.data.MatchedNodes...)
-		if limit > 0 && len(result.MatchedNodes) >= limit {
-			result.MatchedNodes = result.MatchedNodes[:limit]
-			break
+
+			if entry.Action != "match" {
+				continue
+			}
+
+			if matchIdx < len(sub.data.MatchedNodes) {
+				result.MatchedNodes = append(result.MatchedNodes, sub.data.MatchedNodes[matchIdx])
+			}
+			matchIdx++
+
+			if limit > 0 && len(result.MatchedNodes) >= limit {
+				result.VisitedCount = len(result.Log)
+				result.ExecutionMs = float64(time.Since(start).Microseconds()) / 1000.0
+				return result
+			}
 		}
 	}
 
+	result.VisitedCount = len(result.Log)
 	result.ExecutionMs = float64(time.Since(start).Microseconds()) / 1000.0
 	return result
 }
