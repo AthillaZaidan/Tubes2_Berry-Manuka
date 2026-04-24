@@ -621,7 +621,7 @@ HTML yang digunakan:
 
 \begin{table}[H]
 \centering
-\caption{Test Case Parallel BFS dan Parallel DFS (Bagian 1)}
+\caption{Test Case Parallel BFS (Bagian 1)}
 \label{tab:tc-parallel}
 \renewcommand{\arraystretch}{1.4}
 \begin{tabularx}{\textwidth}{|c|>{\raggedright\arraybackslash}X|>{\raggedright\arraybackslash}X|>{\raggedright\arraybackslash}X|c|}
@@ -646,10 +646,10 @@ tepat 3 node \texttt{.leaf} pertama ditemukan, traversal berhenti lebih awal, Vi
 3 node ditemukan, VisitedCount < 20 &
 \checkmark \\
 \hline
-TC-PD-04 &
-Selector: \texttt{div}, Limit: semua, Algoritma: Parallel DFS &
-7 node \texttt{div} ditemukan, hasil identik BFS sekuensial &
-7 node \texttt{div} ditemukan, identik &
+TC-PB-04 &
+Selector: \texttt{div}, Limit: semua, Algoritma: Parallel BFS &
+9 node \texttt{div} ditemukan, hasil identik BFS sekuensial &
+9 node \texttt{div} ditemukan, identik &
 \checkmark \\
 \hline
 \end{tabularx}
@@ -657,7 +657,7 @@ Selector: \texttt{div}, Limit: semua, Algoritma: Parallel DFS &
 
 \begin{table}[H]
 \centering
-\caption{Test Case Parallel BFS dan Parallel DFS (Lanjutan)}
+\caption{Test Case Parallel DFS (Bagian 2)}
 \label{tab:tc-parallel-lanjutan}
 \renewcommand{\arraystretch}{1.4}
 \begin{tabularx}{\textwidth}{|c|>{\raggedright\arraybackslash}X|>{\raggedright\arraybackslash}X|>{\raggedright\arraybackslash}X|c|}
@@ -683,9 +683,9 @@ tepat 3 node \texttt{.leaf} ditemukan &
 \checkmark \\
 \hline
 TC-PB-04 &
-Selector: \texttt{*}, Limit: semua, Algoritma: Parallel DFS &
-nilai depth setiap node identik dengan DFS sekuensial &
-node sesuai &
+Selector: \texttt{div}, Limit: semua, Algoritma: Parallel DFS &
+9 node \texttt{div} ditemukan, nilai depth setiap node identik dengan DFS sekuensial &
+9 node \texttt{div} ditemukan, nilai depth benar dan identik dengan DFS sekuensial &
 \checkmark \\
 \hline
 \end{tabularx}

@@ -111,6 +111,7 @@
 \renewcommand{\footrulewidth}{0.4pt}
 
 \begin{document}
+	\hypersetup{pageanchor=false}
 	
 	\begin{titlepage}
 		\thispagestyle{empty}
@@ -153,10 +154,15 @@
 	\end{titlepage}
 	
 	\clearpage
+	\pagenumbering{roman}
+	\setcounter{page}{1}
+	\hypersetup{pageanchor=true}
 	\pagestyle{fancy}
 	
 	\tableofcontents
 	\clearpage
+	\pagenumbering{arabic}
+	\setcounter{page}{1}
 	
 	\chapter{Pendahuluan}
 	\input{sections/01-pendahuluan}
