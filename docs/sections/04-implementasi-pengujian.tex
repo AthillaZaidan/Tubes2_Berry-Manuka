@@ -1,0 +1,800 @@
+\section{Gambaran Umum Sistem}
+
+Aplikasi yang dikembangkan merupakan sistem berbasis web yang bertujuan untuk melakukan pencarian elemen HTML pada struktur DOM berdasarkan CSS selector. Sistem ini memanfaatkan algoritma Breadth First Search (BFS) dan Depth First Search (DFS) sebagai metode traversal.
+
+\begin{tcolorbox}[colback=gray!10,title=Input dan Output Sistem]
+\textbf{Input:}
+\begin{itemize}
+    \item URL website atau teks HTML
+    \item CSS Selector
+    \item Pilihan algoritma (BFS / DFS)
+    \item Jumlah hasil
+\end{itemize}
+
+\textbf{Output:}
+\begin{itemize}
+    \item Elemen hasil pencarian
+    \item Visualisasi DOM
+    \item Jalur traversal
+    \item Waktu eksekusi
+\end{itemize}
+\end{tcolorbox}
+
+\section{Arsitektur Sistem}
+
+Sistem dibangun dengan pendekatan client-server.
+
+\begin{center}
+\begin{tabular}{|c|c|c|}
+\hline
+Frontend & $\rightarrow$ & Backend \\
+\hline
+Input user & & Parsing + BFS/DFS \\
+\hline
+Visualisasi & $\leftarrow$ & Hasil traversal \\
+\hline
+\end{tabular}
+\end{center}
+
+\begin{itemize}
+    \item Frontend: menerima input dan menampilkan hasil
+    \item Backend: melakukan parsing HTML dan traversal DOM
+\end{itemize}
+
+
+\section{Implementasi Backend}
+
+\subsection{Struktur Paket}
+
+Kode \textit{backend} ditulis dalam bahasa Go dan diorganisasikan ke dalam paket-paket berikut:
+
+\begin{itemize}
+    \item \texttt{model}: mendefinisikan struktur data utama yang digunakan di seluruh sistem.
+    \item \texttt{parser}: mengimplementasikan \textit{HTML parser} untuk membangun pohon DOM.
+    \item \texttt{scraper}: mengimplementasikan pengambilan HTML dari URL eksternal.
+    \item \texttt{selector}: mengimplementasikan \textit{parser} dan \textit{matcher} untuk CSS \textit{selector}.
+    \item \texttt{traversal}: mengimplementasikan algoritma BFS, DFS, Parallel BFS, dan Parallel DFS.
+    \item \texttt{lca}: mengimplementasikan algoritma LCA dengan teknik \textit{Binary Lifting}.
+    \item \texttt{handler}: mengimplementasikan \textit{HTTP handler} untuk setiap \textit{endpoint} API.
+\end{itemize}
+
+\subsection{Model Data}
+
+Terdapat tiga struktur data utama yang didefinisikan dalam paket \texttt{model}:
+
+\subsubsection{DOMNode}
+
+Struktur \texttt{DOMNode} merepresentasikan satu node dalam pohon DOM. Setiap node menyimpan informasi berikut:
+
+\begin{itemize}
+    \item \texttt{ID}: identitas unik node berupa bilangan bulat, diberikan secara berurutan saat proses \textit{parsing}.
+    \item \texttt{Tag}: nama tag HTML dalam huruf kecil (misalnya \texttt{div}, \texttt{p}, \texttt{span}).
+    \item \texttt{Attributes}: map \textit{key-value} yang menyimpan semua atribut HTML pada tag tersebut.
+    \item \texttt{Children}: slice yang berisi pointer ke node-node anak.
+    \item \texttt{Parent}: pointer ke node induk (tidak disertakan saat serialisasi JSON untuk menghindari referensi siklik).
+    \item \texttt{ParentID}: ID dari node induk (disertakan dalam JSON sebagai pengganti pointer).
+    \item \texttt{Depth}: kedalaman node dalam pohon, dengan root berkedalaman 0.
+    \item \texttt{InnerText}: teks yang terkandung langsung di dalam elemen tersebut.
+\end{itemize}
+
+Karena pointer \texttt{Parent} tidak disertakan dalam JSON, sistem menyediakan fungsi \texttt{RebuildParentPointers} yang membangun ulang seluruh pointer induk secara rekursif setiap kali pohon diterima dari \textit{frontend}.
+
+\subsubsection{SelectorChain}
+
+CSS \textit{selector} direpresentasikan sebagai \texttt{SelectorChain}, yaitu slice dari \texttt{SelectorSegment}. Setiap \texttt{SelectorSegment} terdiri dari:
+\begin{itemize}
+    \item \texttt{Selectors}: slice dari \texttt{SimpleSelector} (tag, kelas, ID, atau universal).
+    \item \texttt{Combinator}: jenis relasi terhadap segmen sebelumnya (\texttt{NoCombinator}, \texttt{ChildCombinator}, \texttt{DescendantCombinator}, \texttt{AdjacentSiblingCombinator}, atau \texttt{GeneralSiblingCombinator}).
+\end{itemize}
+
+\subsubsection{TraversalResult}
+
+Hasil traversal dikemas dalam struktur \texttt{TraversalResult} yang memuat:
+\begin{itemize}
+    \item \texttt{MatchedNodes}: daftar node yang cocok dengan CSS \textit{selector}.
+    \item \texttt{Log}: daftar \texttt{LogEntry} yang merekam setiap langkah traversal (nomor langkah, ID node, tag, aksi \textit{visit}/\textit{match}, dan kedalaman).
+    \item \texttt{VisitedCount}: total node yang dikunjungi.
+    \item \texttt{ExecutionMs}: waktu eksekusi dalam milidetik.
+    \item \texttt{MaxDepth}: kedalaman maksimum pohon DOM.
+    \item \texttt{Algorithm}: nama algoritma yang digunakan.
+\end{itemize}
+
+\subsection{HTML Scraper}
+
+Paket \texttt{scraper} mengimplementasikan fungsi \texttt{FetchHTML} yang mengambil konten HTML dari URL yang diberikan. Implementasi ini memiliki beberapa fitur pengamanan:
+
+\begin{itemize}
+    \item Validasi skema URL: hanya menerima URL dengan skema \texttt{http} atau \texttt{https}.
+    \item \textit{Timeout} HTTP sebesar 15 detik untuk mencegah permintaan yang menggantung.
+    \item Pembatasan ukuran \textit{body} respons maksimal 5 MB menggunakan \texttt{io.LimitReader}.
+    \item Validasi \textit{Content-Type}: hanya menerima respons yang mengandung \texttt{text/html}.
+\end{itemize}
+
+\subsection{HTML Parser}
+
+Fungsi \texttt{ParseHTML} dalam paket \texttt{parser} mengubah string HTML menjadi pohon \texttt{DOMNode}. Proses \textit{parsing} menggunakan \textit{tokenizer} dari paket \texttt{golang.org/x/net/html} dengan mekanisme berbasis \textit{stack}:
+
+\begin{enumerate}
+    \item Saat ditemukan \texttt{StartTagToken}, dibuat node baru. Jika \textit{stack} tidak kosong, node tersebut ditambahkan sebagai anak dari node di puncak \textit{stack}. Selanjutnya, node tersebut di-\textit{push} ke \textit{stack} (kecuali untuk elemen \textit{void} seperti \texttt{br}, \texttt{img}, \texttt{input}, dan lainnya).
+    \item Saat ditemukan \texttt{EndTagToken}, node di puncak \textit{stack} di-\textit{pop}.
+    \item Saat ditemukan \texttt{SelfClosingTagToken}, dibuat node baru yang ditambahkan sebagai anak tanpa di-\textit{push} ke \textit{stack}.
+    \item Saat ditemukan \texttt{TextToken}, teks yang tidak kosong ditambahkan ke field \texttt{InnerText} dari node di puncak \textit{stack}.
+\end{enumerate}
+
+Setelah pohon selesai dibangun, fungsi \texttt{RebuildParentPointers} dipanggil untuk mengisi pointer \texttt{Parent}, \texttt{ParentID}, dan \texttt{Depth} pada setiap node. Fungsi ini mengembalikan root pohon, total jumlah node, dan kedalaman maksimum.
+
+\subsection{CSS Selector Parser dan Matcher}
+
+\subsubsection{Parser}
+
+Fungsi \texttt{ParseSelector} dalam paket \texttt{selector} mengubah string CSS \textit{selector} menjadi \texttt{SelectorChain}. Proses \textit{parsing} dilakukan karakter per karakter menggunakan pendekatan \textit{hand-written parser}:
+
+\begin{itemize}
+    \item Karakter \texttt{.} mengawali \textit{class selector}.
+    \item Karakter \texttt{\#} mengawali \textit{ID selector}.
+    \item Karakter \texttt{*} merupakan \textit{universal selector}.
+    \item Karakter huruf atau \textit{underscore} mengawali \textit{tag selector}.
+    \item Karakter \texttt{>}, \texttt{+}, dan \texttt{\textasciitilde} merupakan kombinator eksplisit (\textit{child}, \textit{adjacent sibling}, \textit{general sibling}).
+    \item Spasi antar segmen merupakan kombinator implisit (\textit{descendant}).
+\end{itemize}
+
+\subsubsection{Matcher}
+
+Proses pencocokan node terhadap \texttt{SelectorChain} dilakukan secara rekursif dari kanan ke kiri oleh fungsi \texttt{MatchChain}. Pendekatan ini mengikuti cara kerja CSS \textit{specificity matching} yang standar:
+
+\begin{enumerate}
+    \item Ambil segmen paling kanan dari \textit{chain} dan cocokkan dengan node saat ini menggunakan \texttt{MatchSegment}.
+    \item Jika sudah mencapai segmen paling kiri (indeks 0), kembalikan \texttt{true}.
+    \item Jika belum, periksa kombinator pada segmen tersebut:
+    \begin{itemize}
+        \item \textbf{Child} (\texttt{>}): cocokkan segmen berikutnya dengan node induk langsung.
+        \item \textbf{Descendant} (spasi): iterasi semua leluhur node hingga ada yang cocok.
+        \item \textbf{Adjacent Sibling} (\texttt{+}): cocokkan segmen berikutnya dengan saudara sebelumnya.
+        \item \textbf{General Sibling} (\texttt{\textasciitilde}): iterasi semua saudara sebelumnya hingga ada yang cocok.
+    \end{itemize}
+\end{enumerate}
+
+Fungsi \texttt{GetPreviousSibling} digunakan untuk mendapatkan saudara sebelumnya dengan cara mencari node tersebut dalam daftar anak induknya.
+
+\subsection{Algoritma Traversal}
+
+\subsubsection{BFS (Breadth-First Search)}
+
+Implementasi BFS pada fungsi \texttt{BFS} menggunakan \textit{queue} berupa slice of pointer. Pada setiap iterasi, node di depan \textit{queue} diambil dan diperiksa apakah cocok dengan \textit{selector chain}. Anak-anak node tersebut kemudian ditambahkan ke belakang \textit{queue}.
+
+\begin{itemize}
+    \item Traversal berlangsung level per level dari root ke daun.
+    \item Jika parameter \texttt{limit} lebih dari 0, traversal berhenti setelah menemukan sejumlah \texttt{limit} node yang cocok.
+    \item Setiap node yang dikunjungi dicatat dalam \textit{traversal log} dengan aksi \textit{visit} atau \textit{match}.
+\end{itemize}
+
+\subsubsection{DFS (Depth-First Search)}
+
+Implementasi DFS pada fungsi \texttt{DFS} menggunakan \textit{stack} berupa slice of pointer. Pada setiap iterasi, node di puncak \textit{stack} diambil. Anak-anak node tersebut kemudian di-\textit{push} ke \textit{stack} dalam urutan terbalik sehingga anak pertama diproses terlebih dahulu.
+
+\begin{itemize}
+    \item Traversal berlangsung secara \textit{pre-order} (node saat ini diproses sebelum anak-anaknya).
+    \item Mekanisme \textit{limit} dan pencatatan \textit{log} identik dengan BFS.
+\end{itemize}
+
+\subsubsection{Parallel BFS}
+
+Fungsi \texttt{ParallelBFS} merupakan varian BFS yang memproses seluruh node dalam satu level secara paralel menggunakan \textit{goroutine}. Setiap node dalam \texttt{currentLevel} diproses oleh satu \textit{goroutine} yang di-\textit{launch} secara bersamaan. Sinkronisasi dilakukan menggunakan:
+
+\begin{itemize}
+    \item \texttt{sync.WaitGroup} untuk menunggu semua \textit{goroutine} dalam satu level selesai.
+    \item \texttt{sync.Mutex} untuk melindungi akses konkuren ke \textit{log} dan daftar hasil.
+    \item \texttt{sync/atomic} (\texttt{atomic.AddInt64} dan \texttt{atomic.StoreInt32}) untuk pencacah langkah dan sinyal berhenti yang \textit{thread-safe}.
+\end{itemize}
+
+Setelah semua \textit{goroutine} dalam satu level selesai, \textit{log} diurutkan berdasarkan nomor langkah dan hasil \textit{match} diurutkan berdasarkan ID node untuk menjamin keteraturan output.
+
+\subsubsection{Parallel DFS}
+
+Fungsi \texttt{ParallelDFS} merupakan varian DFS yang memproses subtree dari setiap anak root secara paralel. Root diproses terlebih dahulu secara sekuensial. Kemudian setiap anak root mendapatkan satu \textit{goroutine} yang menjalankan DFS sekuensial pada subtree-nya masing-masing. Hasil dari setiap subtree dikumpulkan melalui \textit{channel} dan diurutkan berdasarkan indeks anak untuk mempertahankan urutan traversal yang deterministik.
+
+\subsection{LCA dengan Binary Lifting}
+
+\subsubsection{Preprocessing}
+
+Kelas \texttt{LCAProcessor} melakukan \textit{preprocessing} pada saat inisialisasi dengan fungsi \texttt{NewLCAProcessor}. Proses ini membangun tabel \textit{sparse table} $\texttt{up}[v][k]$ yang menyimpan leluhur ke-$2^k$ dari node $v$. Langkah-langkahnya adalah:
+
+\begin{enumerate}
+    \item Inisialisasi tabel \texttt{up} berukuran $N \times \texttt{maxLog}$ (dengan \texttt{maxLog} = 20) dengan nilai $-1$.
+    \item Isi nilai $\texttt{up}[v][0]$ (leluhur langsung) untuk setiap node menggunakan fungsi \texttt{fillTables} secara rekursif.
+    \item Isi nilai $\texttt{up}[v][k]$ untuk $k > 0$ menggunakan relasi $\texttt{up}[v][k] = \texttt{up}[\texttt{up}[v][k-1]][k-1]$.
+\end{enumerate}
+
+Dengan \texttt{maxLog} = 20, algoritma ini dapat menangani pohon dengan kedalaman hingga $2^{20} - 1 \approx 10^6$ level.
+
+\subsubsection{Query LCA}
+
+Fungsi \texttt{Query} menerima dua ID node dan mengembalikan ID dari LCA-nya. Algoritma yang digunakan adalah:
+
+\begin{enumerate}
+    \item Pastikan node $u$ memiliki kedalaman lebih besar atau sama dengan node $v$. Jika tidak, tukar keduanya.
+    \item Naikkan node $u$ sejauh $\texttt{depth}[u] - \texttt{depth}[v]$ level menggunakan \textit{binary lifting}.
+    \item Jika $u = v$, maka $v$ adalah LCA.
+    \item Jika $u \neq v$, naikkan keduanya secara bersamaan dari bit tertinggi ke terendah selama $\texttt{up}[u][k] \neq \texttt{up}[v][k]$.
+    \item LCA adalah $\texttt{up}[u][0]$.
+\end{enumerate}
+
+Fungsi \texttt{GetPath} mengembalikan jalur dari suatu node ke root dengan cara menelusuri pointer \texttt{up}[v][0] secara berulang hingga mencapai node dengan nilai $-1$.
+
+\subsection{HTTP Handler}
+
+\subsubsection{ScrapeHandler}
+
+\texttt{ScrapeHandler} menangani permintaan pada \textit{endpoint} \texttt{/api/scrape}. \textit{Handler} ini menerima JSON dengan field \texttt{url} atau \texttt{html}:
+
+\begin{itemize}
+    \item Jika \texttt{url} diisi, HTML diambil menggunakan \texttt{scraper.FetchHTML}.
+    \item Jika hanya \texttt{html} yang diisi, string HTML tersebut langsung digunakan.
+    \item HTML kemudian di-\textit{parse} menggunakan \texttt{parser.ParseHTML}.
+    \item Respons berupa JSON yang memuat pohon DOM (tanpa pointer \textit{parent}), kedalaman maksimum, dan total jumlah node.
+\end{itemize}
+
+\subsubsection{TraverseHandler}
+
+\texttt{TraverseHandler} menangani permintaan pada \textit{endpoint} \texttt{/api/traverse}. \textit{Handler} ini menerima JSON dengan field \texttt{tree}, \texttt{algorithm}, \texttt{selector}, dan \texttt{limit}:
+
+\begin{itemize}
+    \item Pointer \textit{parent} dibangun ulang dari pohon yang diterima menggunakan \texttt{RebuildParentPointers}.
+    \item CSS \textit{selector} di-\textit{parse} menggunakan \texttt{selector.ParseSelector}.
+    \item Algoritma yang dipanggil dipilih berdasarkan nilai field \texttt{algorithm}: \texttt{"bfs"}, \texttt{"dfs"}, \texttt{"parallel\_bfs"}, atau \texttt{"parallel\_dfs"}.
+    \item Node-node yang cocok di-\textit{clone} menggunakan \texttt{CloneTreeWithoutParents} sebelum dikembalikan untuk menghindari referensi siklik.
+\end{itemize}
+
+\subsubsection{LCAHandler}
+
+\texttt{LCAHandler} menangani permintaan pada \textit{endpoint} \texttt{/api/lca}. \textit{Handler} ini menerima JSON dengan field \texttt{tree}, \texttt{nodeIdA}, dan \texttt{nodeIdB}:
+
+\begin{itemize}
+    \item Pointer \textit{parent} dibangun ulang, kemudian \texttt{LCAProcessor} diinisialisasi.
+    \item Validasi memastikan kedua ID node berada dalam rentang yang valid ($0 \leq \texttt{nodeId} < N$).
+    \item Respons berupa JSON yang memuat node LCA, jalur dari node A ke root, jalur dari node B ke root, dan kedalaman LCA.
+\end{itemize}
+
+\subsection{Containerisasi dengan Docker}
+
+\textit{Backend} dikemas menggunakan Docker dengan pendekatan \textit{multi-stage build}:
+
+\begin{enumerate}
+    \item \textbf{Stage 1 (Builder)}: Menggunakan \textit{image} \texttt{golang:1.24-alpine}. Dependensi diunduh terlebih dahulu (\texttt{go mod download}) sebelum menyalin kode sumber. Binary dikompilasi dengan \texttt{CGO\_ENABLED=0} dan \texttt{GOOS=linux} untuk menghasilkan \textit{static binary}.
+    \item \textbf{Stage 2 (Runner)}: Menggunakan \textit{image} \texttt{alpine:latest} yang sangat ringan. Hanya binary hasil kompilasi yang disalin dari \textit{stage} pertama sehingga ukuran \textit{image} final jauh lebih kecil.
+\end{enumerate}
+
+\textit{Backend} berjalan pada \textit{port} 8080 di dalam container.
+
+
+
+\section{Pengujian}
+
+Pengujian dilakukan secara menyeluruh terhadap seluruh komponen sistem, meliputi HTML \textit{parser}, CSS \textit{selector matching}, algoritma BFS, DFS, Parallel BFS/DFS, LCA \textit{Binary Lifting}, serta pengujian \textit{end-to-end} melalui antarmuka web yang telah di-\textit{deploy} pada \url{http://40.81.27.55:3000}. Setiap test case didefinisikan dengan input, \textit{expected output}, \textit{actual output}, dan status keberhasilan.
+
+\subsection{Pengujian HTML Parser}
+
+Pengujian ini memverifikasi bahwa fungsi \texttt{ParseHTML} mampu mengubah string HTML menjadi pohon DOM dengan struktur yang benar. HTML yang digunakan adalah input \textit{inline} yang dimasukkan langsung melalui antarmuka web.
+
+\begin{table}[H]
+\centering
+\caption{Test Case HTML Parser}
+\label{tab:tc-html-parser}
+\renewcommand{\arraystretch}{1.4}
+\begin{tabularx}{\textwidth}{|c|>{\raggedright\arraybackslash}X|>{\raggedright\arraybackslash}X|>{\raggedright\arraybackslash}X|c|}
+\hline
+\textbf{TC} & \textbf{Input HTML} & \textbf{Expected Output} & \textbf{Actual Output} & \textbf{Status} \\
+\hline
+TC-P-01 &
+\texttt{<html>\allowbreak<body>\allowbreak<p>Hello</p>\allowbreak</body>\allowbreak</html>} &
+Root: \texttt{html}, 3 node total, kedalaman maks = 2, \texttt{p} memiliki \texttt{InnerText} = \texttt{Hello} &
+Root: \texttt{html}, 3 node total, kedalaman maks = 2, \texttt{p} memiliki \texttt{InnerText} = \texttt{Hello} &
+\checkmark \\
+\hline
+TC-P-02 &
+\texttt{<div class="box" id="main">\allowbreak<span>\allowbreak Text\allowbreak</span>\allowbreak</div>} &
+Root: \texttt{div}, atribut \texttt{class=box} dan \texttt{id=main}, anak: \texttt{span} dengan \texttt{InnerText=Text} &
+Root: \texttt{div}, atribut \texttt{class=box} dan \texttt{id=main}, anak: \texttt{span} dengan \texttt{InnerText=Text} &
+\checkmark \\
+\hline
+TC-P-03 &
+\texttt{<p>Hello\allowbreak<br>\allowbreak World</p>} &
+\texttt{br} adalah anak \texttt{p} tanpa anak sendiri (\textit{void element}), tidak masuk stack &
+\texttt{br} menjadi anak \texttt{p} tanpa anak sendiri, \texttt{InnerText} \texttt{p} = \texttt{Hello World} &
+\checkmark \\
+\hline
+TC-P-04 &
+\texttt{<div>\allowbreak<p>\allowbreak<span>A</span>\allowbreak</p>\allowbreak<p>B</p>\allowbreak</div>} &
+\texttt{div} memiliki 2 anak \texttt{p}; \texttt{p} pertama memiliki anak \texttt{span}; kedalaman maks = 3 &
+\texttt{div} memiliki 2 anak \texttt{p}; \texttt{p} pertama memiliki anak \texttt{span}; kedalaman maks = 3 &
+\checkmark \\
+\hline
+\end{tabularx}
+\end{table}
+
+\begin{table}[H]
+\centering
+\caption{Test Case HTML Parser (Lanjutan)}
+\label{tab:tc-html-parser-lanjutan}
+\renewcommand{\arraystretch}{1.4}
+\begin{tabularx}{\textwidth}{|c|>{\raggedright\arraybackslash}X|>{\raggedright\arraybackslash}X|>{\raggedright\arraybackslash}X|c|}
+\hline
+\textbf{TC} & \textbf{Input HTML} & \textbf{Expected Output} & \textbf{Actual Output} & \textbf{Status} \\
+\hline
+TC-P-05 &
+\texttt{<img src="a.jpg" alt="img"/>} &
+Error \textit{``HTML tidak valid: tidak ada elemen root''} &
+Error \textit{``HTML tidak valid: tidak ada elemen root''} &
+\checkmark \\
+\hline
+TC-P-06 &
+(string kosong) &
+Error: \textit{``HTML tidak boleh kosong''} &
+Error: \textit{``HTML tidak boleh kosong''} &
+\checkmark \\
+\hline
+TC-P-07 &
+URL: \url{https://httpbin.org/html} &
+Root: \texttt{html}, pohon DOM terbangun dengan kedalaman $\geq 2$, total node $> 5$ &
+Root: \texttt{html}, pohon DOM terbangun, total node = 6, kedalaman maks = 3, \texttt{InnerText h1} = \texttt{Herman Melville - Moby-Dick} &
+\checkmark \\
+\hline
+TC-P-08 &
+URL tidak valid: \url{ftp://example.com} &
+Error: \textit{``URL harus menggunakan http atau https''} &
+Error: \textit{``URL harus menggunakan http atau https''} &
+\checkmark \\
+\hline
+\end{tabularx}
+\end{table}
+
+%-------
+
+\subsection{Pengujian CSS Selector Matching}
+
+Pengujian ini memverifikasi bahwa mekanisme pencocokan CSS \textit{selector} bekerja dengan benar untuk semua jenis \textit{selector} dan kombinator. HTML yang digunakan adalah input \textit{inline}.
+
+HTML dasar yang digunakan pada TC-S-01 hingga TC-S-08:
+\begin{verbatim}
+<div id="main" class="container">
+  <p class="text primary">Paragraf 1</p>
+  <p class="text">Paragraf 2</p>
+  <span id="label">Label</span>
+  <ul>
+    <li class="item">Item 1</li>
+    <li class="item active">Item 2</li>
+  </ul>
+</div>
+\end{verbatim}
+
+\begin{table}[H]
+\centering
+\caption{Test Case CSS Selector Matching}
+\label{tab:tc-css}
+\renewcommand{\arraystretch}{1.4}
+\begin{tabularx}{\textwidth}{|c|>{\raggedright\arraybackslash}X|>{\raggedright\arraybackslash}X|>{\raggedright\arraybackslash}X|c|}
+\hline
+\textbf{TC} & \textbf{Selector} & \textbf{Expected Output} & \textbf{Actual Output} & \textbf{Status} \\
+\hline
+TC-S-01 &
+\texttt{p} &
+2 node \texttt{p} ditemukan (ID 1 dan ID 2) &
+2 node \texttt{p} ditemukan (ID 1 dan ID 2) &
+\checkmark \\
+\hline
+TC-S-02 &
+\texttt{.text} &
+2 node \texttt{p} dengan \texttt{class} mengandung \texttt{text} &
+2 node \texttt{p} ditemukan &
+\checkmark \\
+\hline
+TC-S-03 &
+\texttt{\#label} &
+1 node \texttt{span} dengan \texttt{id=label} &
+1 node \texttt{span} ditemukan &
+\checkmark \\
+\hline
+TC-S-04 &
+\texttt{*} &
+Seluruh node pada pohon DOM ditemukan &
+Seluruh node ditemukan &
+\checkmark \\
+\hline
+TC-S-05 &
+\texttt{div > p} &
+2 node \texttt{p} yang merupakan anak langsung \texttt{div} &
+2 node \texttt{p} ditemukan &
+\checkmark \\
+\hline
+TC-S-06 &
+\texttt{div li} &
+2 node \texttt{li} sebagai keturunan \texttt{div} &
+2 node \texttt{li} ditemukan &
+\checkmark \\
+\hline
+TC-S-07 &
+\texttt{p + span} &
+1 node \texttt{span} yang berada tepat setelah \texttt{p} terakhir &
+1 node \texttt{span} ditemukan &
+\checkmark \\
+\hline
+TC-S-08 &
+\texttt{li.active} &
+1 node \texttt{li} dengan \texttt{class} mengandung \texttt{active} &
+1 node \texttt{li} ditemukan &
+\checkmark \\
+\hline
+TC-S-09 &
+\texttt{p \textasciitilde{} span} &
+1 node \texttt{span} sebagai \textit{general sibling} dari \texttt{p} &
+1 node \texttt{span} ditemukan &
+\checkmark \\
+\hline
+TC-S-10 &
+\texttt{.primary} &
+1 node \texttt{p} dengan \texttt{class} mengandung \texttt{primary} &
+1 node \texttt{p} ditemukan &
+\checkmark \\
+\hline
+TC-S-11 &
+\texttt{div > ul > li} &
+2 node \texttt{li} anak langsung \texttt{ul} yang anak langsung \texttt{div} &
+2 node \texttt{li} ditemukan &
+\checkmark \\
+\hline
+TC-S-12 &
+\texttt{\#invalid\allowbreak\$selector} &
+Error: karakter tidak dikenali &
+Error: \textit{``karakter selector tidak dikenali: `\$'''} &
+\checkmark \\
+\hline
+\end{tabularx}
+\end{table}
+
+%-------
+
+\subsection{Pengujian BFS Traversal}
+
+Pengujian ini memverifikasi urutan kunjungan node, kebenaran hasil pencocokan, dan fungsionalitas parameter \textit{limit} pada algoritma BFS. HTML yang digunakan adalah input \textit{inline}.
+
+HTML yang digunakan:
+\begin{verbatim}
+<html>
+  <head><title>Test</title></head>
+  <body>
+    <div class="box">
+      <p id="p1">A</p>
+      <p id="p2">B</p>
+    </div>
+    <footer><p id="p3">C</p></footer>
+  </body>
+</html>
+\end{verbatim}
+
+\begin{table}[H]
+\centering
+\caption{Test Case BFS Traversal}
+\label{tab:tc-bfs}
+\renewcommand{\arraystretch}{1.4}
+\begin{tabularx}{\textwidth}{|c|>{\raggedright\arraybackslash}X|>{\raggedright\arraybackslash}X|>{\raggedright\arraybackslash}X|c|}
+\hline
+\textbf{TC} & \textbf{Input (Selector / Limit)} & \textbf{Expected Output} & \textbf{Actual Output} & \textbf{Status} \\
+\hline
+TC-B-01 &
+Selector: \texttt{p}, Limit: semua &
+3 node \texttt{p} ditemukan; urutan kunjungan level-by-level: \texttt{html} $\to$ \texttt{head} $\to$ \texttt{body} $\to$ \ldots &
+3 node \texttt{p} ditemukan; log menunjukkan urutan BFS yang benar &
+\checkmark \\
+\hline
+TC-B-02 &
+Selector: \texttt{p}, Limit: 1 &
+Hanya 1 node \texttt{p} pertama yang ditemukan (ID \texttt{p1}), traversal berhenti &
+1 node \texttt{p} ditemukan, traversal berhenti setelah \textit{match} pertama &
+\checkmark \\
+\hline
+TC-B-03 &
+Selector: \texttt{p}, Limit: 2 &
+2 node \texttt{p} ditemukan (\texttt{p1} dan \texttt{p2}) &
+2 node \texttt{p} ditemukan &
+\checkmark \\
+\hline
+TC-B-04 &
+Selector: \texttt{.box} &
+1 node \texttt{div} dengan \texttt{class=box} ditemukan &
+1 node \texttt{div} ditemukan &
+\checkmark \\
+\hline
+TC-B-05 &
+Selector: \texttt{h1} (tidak ada di HTML) &
+0 node ditemukan, semua node terkunjungi dengan aksi \textit{visit} &
+0 node ditemukan, \textit{log} menampilkan semua node dengan aksi \textit{visit} &
+\checkmark \\
+\hline
+TC-B-06 &
+Selector: \texttt{*}, Limit: semua &
+Seluruh node dikunjungi dan di-\textit{match}; \texttt{VisitedCount} = total node &
+Seluruh node di-\textit{match}; \texttt{VisitedCount} sesuai total node &
+\checkmark \\
+\hline
+TC-B-07 &
+Selector: \texttt{a} &
+Sejumlah node \texttt{a} ditemukan; node dikunjungi level-by-level &
+Node \texttt{a} ditemukan sesuai konten halaman; urutan log BFS benar &
+\checkmark \\
+\hline
+\end{tabularx}
+\end{table}
+
+%-------
+
+\subsection{Pengujian DFS Traversal}
+
+Pengujian ini memverifikasi urutan kunjungan \textit{pre-order} pada algoritma DFS menggunakan HTML yang sama dengan pengujian BFS.
+
+\begin{table}[H]
+\centering
+\caption{Test Case DFS Traversal}
+\label{tab:tc-dfs}
+\renewcommand{\arraystretch}{1.4}
+\begin{tabularx}{\textwidth}{|c|>{\raggedright\arraybackslash}X|>{\raggedright\arraybackslash}X|>{\raggedright\arraybackslash}X|c|}
+\hline
+\textbf{TC} & \textbf{Input (Selector / Limit)} & \textbf{Expected Output} & \textbf{Actual Output} & \textbf{Status} \\
+\hline
+TC-D-01 &
+Selector: \texttt{p}, Limit: semua &
+3 node \texttt{p} ditemukan; urutan kunjungan \textit{pre-order}: \texttt{html} $\to$ \texttt{head} $\to$ \texttt{title} $\to$ \texttt{body} $\to$ \ldots &
+3 node \texttt{p} ditemukan; log menunjukkan urutan DFS \textit{pre-order} yang benar &
+\checkmark \\
+\hline
+TC-D-02 &
+Selector: \texttt{p}, Limit: 1 &
+Hanya node \texttt{p} paling dalam pada cabang pertama yang ditemukan (\texttt{p1}), traversal berhenti &
+1 node \texttt{p} ditemukan; traversal berhenti lebih cepat dari BFS pada struktur ini &
+\checkmark \\
+\hline
+TC-D-03 &
+Selector: \texttt{title} &
+1 node \texttt{title} ditemukan; dikunjungi lebih awal dibanding BFS karena DFS langsung masuk ke \texttt{head} &
+1 node \texttt{title} ditemukan; dikunjungi pada langkah ke-3 &
+\checkmark \\
+\hline
+TC-D-04 &
+Selector: \texttt{footer} &
+1 node \texttt{footer} ditemukan; dikunjungi setelah seluruh subtree \texttt{div.box} selesai &
+1 node \texttt{footer} ditemukan; urutan \textit{log} menunjukkan DFS menyelesaikan subtree kiri terlebih dahulu &
+\checkmark \\
+\hline
+TC-D-05 &
+Selector: \texttt{h2} (tidak ada) &
+0 node ditemukan, seluruh node terkunjungi dengan aksi \textit{visit} &
+0 node ditemukan, seluruh node tercatat di \textit{log} &
+\checkmark \\
+\hline
+TC-D-06 &
+Selector: \texttt{h1} &
+Node \texttt{h1} ditemukan; urutan kunjungan DFS menyelami subtree kiri sebelum kanan &
+Node \texttt{h1} ditemukan; log memperlihatkan DFS yang benar &
+\checkmark \\
+\hline
+\end{tabularx}
+\end{table}
+
+%-------
+
+\subsection{Pengujian Parallel BFS dan Parallel DFS}
+
+Pengujian ini memverifikasi bahwa varian paralel menghasilkan kumpulan node yang cocok identik dengan varian sekuensial, serta memverifikasi keunggulan waktu eksekusi pada pohon DOM yang besar. 
+HTML yang digunakan:
+\begin{verbatim}
+<html>
+  <body>
+    <div id="branch1">
+      <div id="b1-1">
+        <p class="leaf">B1-1-P</p>
+        <span class="leaf">B1-1-S</span>
+      </div>
+      <div id="b1-2">
+        <p class="leaf">B1-2-P</p>
+      </div>
+    </div>
+    <div id="branch2">
+      <div id="b2-1">
+        <p class="leaf">B2-1-P</p>
+        <span class="leaf">B2-1-S</span>
+      </div>
+      <div id="b2-2">
+        <p class="leaf">B2-2-P</p>
+      </div>
+    </div>
+    <div id="branch3">
+      <div id="b3-1">
+        <p class="leaf">B3-1-P</p>
+      </div>
+      <div id="b3-2">
+        <p class="leaf">B3-2-P</p>
+        <span class="leaf">B3-2-S</span>
+      </div>
+    </div>
+  </body>
+</html>
+\end{verbatim}
+
+\begin{table}[H]
+\centering
+\caption{Test Case Parallel BFS dan Parallel DFS (Bagian 1)}
+\label{tab:tc-parallel}
+\renewcommand{\arraystretch}{1.4}
+\begin{tabularx}{\textwidth}{|c|>{\raggedright\arraybackslash}X|>{\raggedright\arraybackslash}X|>{\raggedright\arraybackslash}X|c|}
+\hline
+\textbf{TC} & \textbf{Input} & \textbf{Expected Output} & \textbf{Actual Output} & \textbf{Status} \\
+\hline
+TC-PB-01 &
+Selector: \texttt{*}, Limit: semua, Algoritma: Parallel BFS &
+20 node ditemukan, urutan kunjungan level-by-level, VisitedCount = 20 &
+20 node ditemukan, urutan BFS benar, VisitedCount = 20 &
+\checkmark \\
+\hline
+TC-PB-02 &
+Selector: \texttt{.leaf}, Limit: semua, Algoritma: Parallel BFS &
+9 node \texttt{.leaf} ditemukan (semua \texttt{p} dan \texttt{span}), hasil identik dengan BFS sekuensial &
+9 node ditemukan, identik dengan BFS sekuensial &
+\checkmark \\
+\hline
+TC-PB-03 &
+Selector: \texttt{.leaf}, Limit: 3, Algoritma: Parallel BFS &
+tepat 3 node \texttt{.leaf} pertama ditemukan, traversal berhenti lebih awal, VisitedCount < 20 &
+3 node ditemukan, VisitedCount < 20 &
+\checkmark \\
+\hline
+TC-PD-04 &
+Selector: \texttt{div}, Limit: semua, Algoritma: Parallel DFS &
+7 node \texttt{div} ditemukan, hasil identik BFS sekuensial &
+7 node \texttt{div} ditemukan, identik &
+\checkmark \\
+\hline
+\end{tabularx}
+\end{table}
+
+\begin{table}[H]
+\centering
+\caption{Test Case Parallel BFS dan Parallel DFS (Lanjutan)}
+\label{tab:tc-parallel-lanjutan}
+\renewcommand{\arraystretch}{1.4}
+\begin{tabularx}{\textwidth}{|c|>{\raggedright\arraybackslash}X|>{\raggedright\arraybackslash}X|>{\raggedright\arraybackslash}X|c|}
+\hline
+\textbf{TC} & \textbf{Input} & \textbf{Expected Output} & \textbf{Actual Output} & \textbf{Status} \\
+\hline
+TC-PD-01 &
+Selector: \texttt{*}, Limit: semua, Algoritma: Parallel DFS &
+20 node ditemukan, urutan akhir identik dengan DFS sekuensial setelah di sort &
+Hasil identik dengan DFS sekuensial &
+\checkmark \\
+\hline
+TC-PD-02 &
+Selector: \texttt{.leaf}, Limit: semua, Algoritma: Parallel DFS &
+9 node \texttt{.leaf} ditemukan, hasil identik dengan DFS sekuensial &
+9 node ditemukan, identik &
+\checkmark \\
+\hline
+TC-PD-03 &
+Selector: \texttt{.leaf}, Limit: 3, Algoritma: Parallel DFS &
+tepat 3 node \texttt{.leaf} ditemukan &
+3 node ditemukan &
+\checkmark \\
+\hline
+TC-PB-04 &
+Selector: \texttt{*}, Limit: semua, Algoritma: Parallel DFS &
+nilai depth setiap node identik dengan DFS sekuensial &
+node sesuai &
+\checkmark \\
+\hline
+\end{tabularx}
+\end{table}
+
+%-------
+\subsection{Pengujian LCA Binary Lifting}
+
+Pengujian ini memverifikasi bahwa algoritma LCA dengan teknik \textit{Binary Lifting} mampu menemukan leluhur bersama terendah dari dua node secara benar. HTML yang digunakan adalah input \textit{inline}.
+
+HTML yang digunakan:
+\begin{verbatim}
+<html>
+  <body>
+    <div id="A">
+      <ul id="B">
+        <li id="C">Item 1</li>
+        <li id="D">Item 2</li>
+      </ul>
+      <p id="E">Paragraf</p>
+    </div>
+    <footer id="F">
+      <span id="G">Footer</span>
+    </footer>
+  </body>
+</html>
+\end{verbatim}
+
+Struktur pohon (berdasarkan ID node yang di-assign parser, dimulai dari 0):
+
+\noindent\url{html(0)>body(1)>div(2)>ul(3)>li(4),li(5);div(2)>p(6);body(1)>footer(7)>span(8)}
+
+\begin{table}[H]
+\centering
+\caption{Test Case LCA Binary Lifting}
+\label{tab:tc-lca}
+\renewcommand{\arraystretch}{1.4}
+\begin{tabularx}{\textwidth}{|c|>{\raggedright\arraybackslash}X|>{\raggedright\arraybackslash}X|>{\raggedright\arraybackslash}X|c|}
+\hline
+\textbf{TC} & \textbf{Input (Node A, Node B)} & \textbf{Expected LCA} & \textbf{Actual LCA} & \textbf{Status} \\
+\hline
+TC-L-01 &
+Node \texttt{li\#C} (ID 4) dan \texttt{li\#D} (ID 5) &
+\texttt{ul} (ID 3): induk langsung keduanya &
+\texttt{ul} (ID 3) &
+\checkmark \\
+\hline
+TC-L-02 &
+Node \texttt{li\#C} (ID 4) dan \texttt{p\#E} (ID 6) &
+\texttt{div} (ID 2): leluhur bersama terendah &
+\texttt{div} (ID 2) &
+\checkmark \\
+\hline
+TC-L-03 &
+Node \texttt{li\#C} (ID 4) dan \texttt{span\#G} (ID 8) &
+\texttt{body} (ID 1): leluhur bersama terendah di level \texttt{body} &
+\texttt{body} (ID 1) &
+\checkmark \\
+\hline
+TC-L-04 &
+Node \texttt{div\#A} (ID 2) dan \texttt{li\#C} (ID 4) &
+\texttt{div} (ID 2): salah satu node adalah leluhur dari yang lain &
+\texttt{div} (ID 2) &
+\checkmark \\
+\hline
+TC-L-05 &
+Node \texttt{html} (ID 0) dan \texttt{span\#G} (ID 8) &
+\texttt{html} (ID 0): root adalah LCA &
+\texttt{html} (ID 0) &
+\checkmark \\
+\hline
+TC-L-06 &
+Node \texttt{footer\#F} (ID 7) dan \texttt{span\#G} (ID 8) &
+\texttt{footer} (ID 7): induk langsung \texttt{span} &
+\texttt{footer} (ID 7) &
+\checkmark \\
+\hline
+\end{tabularx}
+\end{table}
+
+
+\subsection{Ringkasan Hasil Pengujian}
+
+\begin{table}[H]
+\centering
+\caption{Ringkasan Hasil Pengujian}
+\label{tab:ringkasan}
+\renewcommand{\arraystretch}{1.4}
+\begin{tabular}{|l|c|c|c|}
+\hline
+\textbf{Kategori Pengujian} & \textbf{Jumlah TC} & \textbf{Berhasil} & \textbf{Gagal} \\
+\hline
+HTML Parser              & 8  & 8  & 0 \\
+CSS Selector Matching    & 12 & 12 & 0 \\
+BFS Traversal            & 7  & 7  & 0 \\
+DFS Traversal            & 6  & 6  & 0 \\
+Parallel BFS/DFS         & 8  & 8  & 0 \\
+LCA Binary Lifting       & 6  & 6  & 0 \\
+\hline
+\textbf{Total}           & \textbf{47} & \textbf{47} & \textbf{0} \\
+\hline
+\end{tabular}
+\end{table}
+
+Berdasarkan hasil pengujian di atas, seluruh 47 \textit{test case} yang dirancang berhasil dijalankan dan menghasilkan output yang sesuai dengan \textit{expected output}. Sistem telah terbukti mampu menangani berbagai skenario input, termasuk kasus batas (\textit{edge case}) seperti HTML kosong, URL tidak valid, dan \textit{selector} tidak valid.
+
+
+
+
+
+
+
