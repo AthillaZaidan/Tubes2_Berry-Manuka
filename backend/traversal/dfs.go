@@ -19,8 +19,9 @@ func DFS(root *model.DOMNode, chain model.SelectorChain, limit int) model.Traver
 		result.ExecutionMs = float64(time.Since(start).Microseconds()) / 1000.0
 		return result
 	}
-
-	model.RebuildParentPointers(root)
+	if root.Parent == nil {
+		model.RebuildParentPointers(root)
+	}
 	result.MaxDepth = model.MaxDepth(root)
 
 	stack := []*model.DOMNode{root}
