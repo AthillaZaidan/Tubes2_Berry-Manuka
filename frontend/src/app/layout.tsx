@@ -31,9 +31,9 @@ export default function RootLayout({
         />
       </head>
       <body className="antialiased">
-        <div className="min-h-screen">
+        <div className="flex min-h-screen flex-col">
           <NavbarWrapper />
-          <main>{children}</main>
+          <main className="min-h-0 flex-1">{children}</main>
           <FooterWrapper />
         </div>
       </body>

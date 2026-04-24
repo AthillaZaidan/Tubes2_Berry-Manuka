@@ -9,8 +9,9 @@ import (
 )
 
 const (
-	maxBodySize = 5 * 1024 * 1024
-	httpTimeout = 15 * time.Second
+	maxBodySize      = 5 * 1024 * 1024
+	httpTimeout      = 15 * time.Second
+	defaultUserAgent = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36"
 )
 
 var validSchemes = map[string]bool{"http": true, "https": true}
@@ -27,13 +28,26 @@ func FetchHTML(rawURL string) (string, error) {
 
 	client := &http.Client{Timeout: httpTimeout}
 
-	resp, err := client.Get(rawURL)
+	req, err := http.NewRequest(http.MethodGet, rawURL, nil)
+	if err != nil {
+		return "", fmt.Errorf("URL tidak valid: %w", err)
+	}
+	req.Header.Set("User-Agent", defaultUserAgent)
+	req.Header.Set("Accept", "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8")
+	req.Header.Set("Accept-Language", "en-US,en;q=0.9,id;q=0.8")
+	req.Header.Set("Cache-Control", "no-cache")
+	req.Header.Set("Pragma", "no-cache")
+
+	resp, err := client.Do(req)
 	if err != nil {
 		return "", fmt.Errorf("gagal mengambil HTML dari URL: %w", err)
 	}
 	defer resp.Body.Close()
 
 	if resp.StatusCode != http.StatusOK {
+		if resp.StatusCode == http.StatusForbidden {
+			return "", fmt.Errorf("server mengembalikan status 403 Forbidden. Situs target menolak request otomatis")
+		}
 		return "", fmt.Errorf("server mengembalikan status %d: %s", resp.StatusCode, resp.Status)
 	}
 

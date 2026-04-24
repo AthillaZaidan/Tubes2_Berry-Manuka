@@ -4,10 +4,20 @@ import Starfield from "@/components/Starfield";
 import MultithreadToggle from "@/components/MultithreadToggle";
 import { motion } from "framer-motion";
 import { useEffect, useMemo, useRef, useState } from "react";
-import { DOMNode, TraversalLogEntry, TraversalStats } from "@/lib/types";
+import { DOMNode, TraversalLogEntry } from "@/lib/types";
 import { scrapeHTML, traverseTree, findLCA } from "@/lib/api";
 
 type NodeState = "default" | "visited" | "current" | "match";
+const MIN_USER_ZOOM = 0.25;
+const MAX_USER_ZOOM = 40;
+
+function getZoomStep(currentZoom: number) {
+  if (currentZoom < 2) return 0.25;
+  if (currentZoom < 6) return 0.5;
+  if (currentZoom < 12) return 1;
+  if (currentZoom < 24) return 2;
+  return 4;
+}
 
 const DUMMY_HTML = `<!DOCTYPE html>
 <html>
@@ -111,8 +121,8 @@ function computeTreeLayout(root: DOMNode, horizontalGap = 128, verticalGap = 108
   const rawNodes = new Map<number, PositionedNode>();
   let cursorX = 0;
   let maxDepth = 0;
-  const leftGutter = 132;
-  const rightGutter = 72;
+  const leftGutter = 220;
+  const rightGutter = 120;
   const topGutter = 56;
 
   const placeNode = (node: DOMNode, depth: number): number => {
@@ -233,6 +243,7 @@ function TreeCanvas({
   currentAnimatedNodeId,
   visitedIds,
   matchIds,
+  edgePulseEnabled,
   onSelectNode,
   zoom,
   lcaNodeA,
@@ -245,6 +256,7 @@ function TreeCanvas({
   currentAnimatedNodeId: number | null;
   visitedIds: number[];
   matchIds: number[];
+  edgePulseEnabled: boolean;
   onSelectNode: (node: DOMNode) => void;
   zoom: number;
   lcaNodeA: number | null;
@@ -277,7 +289,7 @@ function TreeCanvas({
 
     return Math.min(paddedWidth / layout.width, paddedHeight / layout.height);
   }, [viewportSize.width, viewportSize.height, layout.width, layout.height]);
-  const effectiveScale = Math.max(0.25, fitScale * zoom);
+  const effectiveScale = Math.max(0.03, fitScale * zoom);
 
   useEffect(() => {
     const container = viewportRef.current;
@@ -303,9 +315,9 @@ function TreeCanvas({
       ref={viewportRef}
       className="h-full w-full overflow-auto bg-[radial-gradient(120%_100%_at_50%_0%,rgba(0,229,255,0.12)_0%,rgba(3,5,8,0.95)_45%,rgba(3,5,8,1)_100%)]"
     >
-      <div className="flex min-h-full min-w-full items-start justify-center">
+      <div className="min-h-full min-w-full p-8">
         <div
-          className="origin-top transition-transform duration-200"
+          className="mx-auto w-fit origin-top-left transition-transform duration-200"
           style={{ transform: `scale(${effectiveScale})` }}
         >
           <div
@@ -355,7 +367,7 @@ function TreeCanvas({
                     stroke={isActive ? "#00e5ff" : "rgba(0, 229, 255, 0.35)"}
                     strokeWidth={isActive ? 2.8 : 2}
                     strokeLinecap="round"
-                    className={isActive ? "animate-edge-pulse" : ""}
+                    className={edgePulseEnabled && isActive ? "animate-edge-pulse" : ""}
                   />
                 );
               })}
@@ -395,12 +407,12 @@ function TreeCanvas({
 
 export default function ExplorerPage() {
   const [sourceMode, setSourceMode] = useState<"URL" | "HTML">("HTML");
-  const [sourceInput, setSourceInput] = useState(DUMMY_HTML);
-  const [selectorInput, setSelectorInput] = useState(".active");
+  const [sourceInput, setSourceInput] = useState("");
+  const [selectorInput, setSelectorInput] = useState("");
   const [algorithm, setAlgorithm] = useState<"BFS" | "DFS">("BFS");
   const [parallelMode, setParallelMode] = useState(false);
   const [resultMode, setResultMode] = useState<"ALL" | "TOP_N">("ALL");
-  const [topNInput, setTopNInput] = useState("5");
+  const [topNInput, setTopNInput] = useState("");
 
   const [parseError, setParseError] = useState("");
   const [traversalError, setTraversalError] = useState("");
@@ -414,6 +426,7 @@ export default function ExplorerPage() {
 
   const [speed, setSpeed] = useState(350);
   const [zoom, setZoom] = useState(1);
+  const [animationEnabled, setAnimationEnabled] = useState(true);
 
   const [selectedNodeId, setSelectedNodeId] = useState<number | null>(null);
   const [executionMs, setExecutionMs] = useState(0);
@@ -435,23 +448,17 @@ export default function ExplorerPage() {
     [tree, selectedNodeId]
   );
 
-  const topNValue = useMemo(() => {
-    const parsed = Number.parseInt(topNInput.trim(), 10);
-    return Number.isFinite(parsed) && parsed > 0 ? parsed : 1;
-  }, [topNInput]);
+  const displayedLogs = logs;
 
-  const displayedLogs = useMemo(
-    () => (resultMode === "TOP_N" ? logs.slice(0, topNValue) : logs),
-    [logs, resultMode, topNValue]
-  );
-
-  const visitedIds = useMemo(
-    () => logs.filter((_, index) => index < animationIndex).map((log) => log.nodeId),
-    [logs, animationIndex]
-  );
+  const visitedIds = useMemo(() => {
+    if (!animationEnabled) {
+      return logs.map((log) => log.nodeId);
+    }
+    return logs.filter((_, index) => index < animationIndex).map((log) => log.nodeId);
+  }, [logs, animationIndex, animationEnabled]);
 
   const currentAnimatedNodeId =
-    animationRunning && animationIndex < logs.length
+    animationEnabled && animationRunning && animationIndex < logs.length
       ? logs[animationIndex]?.nodeId ?? null
       : null;
 
@@ -473,12 +480,27 @@ export default function ExplorerPage() {
     : algorithm === "BFS"
       ? "Breadth First Search"
       : "Depth First Search";
-  const visitedCount = Math.min(
-    animationIndex,
-    logs.filter((log) => log.action !== "skip").length
-  );
+  const totalVisitedLogs = logs.filter((log) => log.action !== "skip").length;
+  const visitedCount = animationEnabled
+    ? Math.min(animationIndex, totalVisitedLogs)
+    : totalVisitedLogs;
   const matchCount = logs.filter((log) => log.action === "match").length;
   const visibleLogs = displayedLogs;
+  const formattedExecutionTime = useMemo(() => {
+    if (!Number.isFinite(executionMs) || executionMs <= 0) {
+      return "0.000 ms";
+    }
+
+    if (executionMs < 1) {
+      return `${executionMs.toFixed(3)} ms`;
+    }
+
+    if (executionMs < 1000) {
+      return `${executionMs.toFixed(1)} ms`;
+    }
+
+    return `${(executionMs / 1000).toFixed(2)} s`;
+  }, [executionMs]);
   const sideToggleClass =
     "flex-1 rounded-xl border px-4 py-3 text-sm font-semibold tracking-[0.04em] transition-all duration-200";
   const sidePrimaryButtonClass =
@@ -489,7 +511,7 @@ export default function ExplorerPage() {
     "border-[rgba(0,229,255,0.15)] bg-[rgba(0,229,255,0.04)] text-[#6b8fa3] hover:border-[rgba(0,229,255,0.35)] hover:bg-[rgba(0,229,255,0.08)] hover:text-[#e0f7ff]";
 
   useEffect(() => {
-    if (!animationRunning) return;
+    if (!animationEnabled || !animationRunning) return;
     if (animationIndex >= logs.length) {
       setAnimationRunning(false);
       setIsTraversing(false);
@@ -501,7 +523,14 @@ export default function ExplorerPage() {
     }, speed);
 
     return () => clearTimeout(timer);
-  }, [animationRunning, animationIndex, logs, speed]);
+  }, [animationEnabled, animationRunning, animationIndex, logs, speed]);
+
+  useEffect(() => {
+    if (!animationEnabled) {
+      setAnimationRunning(false);
+      setAnimationIndex(logs.length);
+    }
+  }, [animationEnabled, logs.length]);
 
   useEffect(() => {
     const viewport = logViewportRef.current;
@@ -593,7 +622,7 @@ export default function ExplorerPage() {
         limit,
       });
 
-      // Convert backend log format to frontend format
+      
       const frontendLogs: TraversalLogEntry[] = res.log.map((entry) => ({
         step: entry.step,
         nodeId: entry.nodeId,
@@ -604,7 +633,14 @@ export default function ExplorerPage() {
 
       setLogs(frontendLogs);
       setExecutionMs(res.executionMs);
-      setAnimationRunning(true);
+      if (animationEnabled && frontendLogs.length > 0) {
+        setAnimationIndex(0);
+        setAnimationRunning(true);
+      } else {
+        setAnimationIndex(frontendLogs.length);
+        setAnimationRunning(false);
+        setIsTraversing(false);
+      }
     } catch (err: any) {
       setTraversalError(err.message || "Gagal menjalankan traversal. Pastikan backend berjalan.");
       setIsTraversing(false);
@@ -612,15 +648,21 @@ export default function ExplorerPage() {
   }
 
   function handleZoomIn() {
-    setZoom((prev) => Math.min(prev + 0.1, 1.5));
+    setZoom((prev) => {
+      const step = getZoomStep(prev);
+      return Math.min(Number((prev + step).toFixed(2)), MAX_USER_ZOOM);
+    });
   }
 
   function handleZoomOut() {
-    setZoom((prev) => Math.max(prev - 0.1, 0.4));
+    setZoom((prev) => {
+      const step = getZoomStep(prev);
+      return Math.max(Number((prev - step).toFixed(2)), MIN_USER_ZOOM);
+    });
   }
 
   return (
-    <section className="min-h-[calc(100vh-84px)] h-[calc(100vh+320px)] overflow-hidden">
+    <section className="h-full overflow-hidden">
       <div className="grid h-full grid-cols-[380px_minmax(0,1fr)]">
         <motion.aside
           initial={{ x: -40, opacity: 0 }}
@@ -668,7 +710,7 @@ export default function ExplorerPage() {
                     setHasParsed(false);
                   }}
                   className="w-full rounded-2xl border border-[rgba(0,229,255,0.2)] bg-[rgba(3,5,8,0.6)] px-4 py-3 text-sm text-[#e0f7ff] outline-none placeholder:text-[#6b8fa3] focus:border-[#00e5ff] focus:shadow-[0_0_12px_rgba(0,229,255,0.2)]"
-                  placeholder="https://example.com"
+                  placeholder="Silakan input URL..."
                 />
               ) : (
                 <textarea
@@ -679,7 +721,7 @@ export default function ExplorerPage() {
                     setHasParsed(false);
                   }}
                   className="w-full resize-none rounded-2xl border border-[rgba(0,229,255,0.2)] bg-[rgba(3,5,8,0.6)] px-4 py-4 text-sm text-[#e0f7ff] outline-none placeholder:text-[#6b8fa3] focus:border-[#00e5ff] focus:shadow-[0_0_12px_rgba(0,229,255,0.2)]"
-                  placeholder="<html><body><div>Hello</div></body></html>"
+                  placeholder="Silakan input HTML..."
                 />
               )}
 
@@ -713,7 +755,7 @@ export default function ExplorerPage() {
                 value={selectorInput}
                 onChange={(event) => setSelectorInput(event.target.value)}
                 className="w-full rounded-2xl border border-[rgba(0,229,255,0.2)] bg-[rgba(3,5,8,0.6)] px-4 py-3 text-sm text-[#e0f7ff] outline-none placeholder:text-[#6b8fa3] focus:border-[#00e5ff] focus:shadow-[0_0_12px_rgba(0,229,255,0.2)]"
-                placeholder=".active"
+                placeholder="Silakan input CSS Selector (e.g:.active)"
               />
             </div>
 
@@ -752,7 +794,13 @@ export default function ExplorerPage() {
                 value={topNInput}
                 onChange={(event) => setTopNInput(event.target.value)}
                 inputMode="numeric"
-                className="mb-5 w-full rounded-2xl border border-[rgba(0,229,255,0.2)] bg-[rgba(3,5,8,0.6)] px-4 py-3 text-sm text-[#e0f7ff] outline-none focus:border-[#00e5ff] focus:shadow-[0_0_12px_rgba(0,229,255,0.2)]"
+                disabled={resultMode !== "TOP_N"}
+                placeholder={resultMode === "TOP_N" ? "Masukkan limit Top N" : "Silakan pilih mode Top N dahulu"}
+                className={`mb-5 w-full rounded-2xl border px-4 py-3 text-sm outline-none transition ${
+                  resultMode === "TOP_N"
+                    ? "border-[rgba(0,229,255,0.2)] bg-[rgba(3,5,8,0.6)] text-[#e0f7ff] focus:border-[#00e5ff] focus:shadow-[0_0_12px_rgba(0,229,255,0.2)]"
+                    : "cursor-not-allowed border-[rgba(107,143,163,0.2)] bg-[rgba(3,5,8,0.35)] text-[#6b8fa3]"
+                }`}
               />
 
               <motion.button
@@ -781,14 +829,30 @@ export default function ExplorerPage() {
               <div className="mt-5 space-y-3">
                 <MultithreadToggle enabled={parallelMode} onChange={setParallelMode} />
 
-                {/* Interactive LCA Mode */}
+                <MultithreadToggle
+                  title="Traversal Animation"
+                  subtitleOn="Animated playback"
+                  subtitleOff="Instant result mode"
+                  variant="amber"
+                  enabled={animationEnabled}
+                  onChange={(enabled) => {
+                    setAnimationEnabled(enabled);
+                    if (!enabled && animationRunning) {
+                      setAnimationRunning(false);
+                      setAnimationIndex(logs.length);
+                      setIsTraversing(false);
+                    }
+                  }}
+                />
+
+                
                 <div className="rounded-xl border border-[rgba(139,92,246,0.25)] bg-[rgba(139,92,246,0.06)] p-4">
                   <div className="mb-3 flex items-center justify-between">
                     <span className="text-sm font-semibold text-[#c4b5fd]">LCA Finder</span>
                     <button
                       onClick={() => {
                         if (lcaMode) {
-                          // Turn off: reset everything
+                          
                           setLcaMode(false);
                           setLcaNodeA(null);
                           setLcaNodeB(null);
@@ -798,14 +862,23 @@ export default function ExplorerPage() {
                           setLcaMode(true);
                         }
                       }}
-                      className={`relative h-6 w-10 rounded-full transition-colors ${
-                        lcaMode ? "bg-[rgba(139,92,246,0.4)]" : "bg-[rgba(107,143,163,0.2)]"
+                      type="button"
+                      role="switch"
+                      aria-checked={lcaMode}
+                      aria-label="LCA Finder"
+                      className={`relative h-7 w-12 rounded-full border transition-colors ${
+                        lcaMode
+                          ? "border-[rgba(139,92,246,0.55)] bg-[rgba(139,92,246,0.35)]"
+                          : "border-[rgba(107,143,163,0.3)] bg-[rgba(107,143,163,0.2)]"
                       }`}
                     >
                       <motion.div
-                        className="absolute top-0.5 h-4 w-4 rounded-full"
-                        style={{ background: lcaMode ? "#c4b5fd" : "#6b8fa3" }}
-                        animate={{ left: lcaMode ? "22px" : "2px" }}
+                        className="absolute left-1 top-1 h-5 w-5 rounded-full shadow-md"
+                        style={{
+                          background: lcaMode ? "#c4b5fd" : "#6b8fa3",
+                          boxShadow: lcaMode ? "0 0 10px rgba(139, 92, 246, 0.45)" : "none",
+                        }}
+                        animate={{ x: lcaMode ? 20 : 0 }}
                         transition={{ type: "spring", stiffness: 500, damping: 30 }}
                       />
                     </button>
@@ -818,7 +891,8 @@ export default function ExplorerPage() {
                       className="space-y-2"
                     >
                       <p className="text-xs text-[#a78bfa]">
-                        Klik 2 node di tree untuk mencari LCA.
+                        Click 2 nodes on the tree to find the LCA.
+                        The star symbol is showing the LCA.
                       </p>
                       <div className="flex items-center gap-2 text-xs">
                         <span className={`rounded-md px-2 py-1 ${lcaNodeA !== null ? "bg-[rgba(139,92,246,0.2)] text-[#c4b5fd]" : "text-[#6b8fa3]"}`}>
@@ -901,9 +975,14 @@ export default function ExplorerPage() {
                 </button>
                 <button
                   onClick={() => setAnimationRunning((prev) => !prev)}
-                  className="rounded-md bg-[#00e5ff] px-3 py-1 text-[#030508] transition hover:bg-[#00c2d6]"
+                  disabled={!animationEnabled || logs.length === 0}
+                  className={`rounded-md px-3 py-1 transition ${
+                    !animationEnabled || logs.length === 0
+                      ? "cursor-not-allowed bg-[rgba(107,143,163,0.2)] text-[#6b8fa3]"
+                      : "bg-[#00e5ff] text-[#030508] hover:bg-[#00c2d6]"
+                  }`}
                 >
-                  {animationRunning ? "Pause" : "Play"}
+                  {!animationEnabled ? "Animation OFF" : animationRunning ? "Pause" : "Play"}
                 </button>
 
                 <div className="mx-2 h-6 w-px bg-[rgba(0,229,255,0.2)]" />
@@ -918,11 +997,14 @@ export default function ExplorerPage() {
                   max={1000}
                   step={50}
                   value={speed}
+                  disabled={!animationEnabled}
                   onChange={(event) => setSpeed(Number(event.target.value))}
-                  className="accent-[#00e5ff]"
+                  className={`accent-[#00e5ff] ${!animationEnabled ? "cursor-not-allowed opacity-40" : ""}`}
                 />
 
-                <span className="text-sm font-mono text-[#00e5ff]">{speed}ms</span>
+                <span className={`text-sm font-mono ${animationEnabled ? "text-[#00e5ff]" : "text-[#6b8fa3]"}`}>
+                  {speed}ms
+                </span>
                 <span
                   className={`rounded-md border px-2 py-1 text-xs font-semibold tracking-[0.08em] ${
                     parallelMode
@@ -952,11 +1034,11 @@ export default function ExplorerPage() {
                 <strong className="text-[#00e5ff]">{matchCount}</strong>{" "}
                 <span className="text-[10px] uppercase tracking-wider text-[#6b8fa3]">matches</span>
               </span>
-              <span className="text-[#ff9e00]">{executionMs.toFixed(1)} ms</span>
+              <span className="text-[#ff9e00]">{formattedExecutionTime}</span>
             </div>
           </motion.div>
 
-          <div className="relative overflow-auto border-b border-[rgba(0,229,255,0.08)] bg-[#030508]">
+          <div className="relative min-h-0 overflow-auto border-b border-[rgba(0,229,255,0.08)] bg-[#030508]">
             <div className="grid-bg absolute inset-0 opacity-70" />
             <Starfield className="z-0" />
             <div className="radial-glow pointer-events-none absolute inset-0" />
@@ -984,13 +1066,13 @@ export default function ExplorerPage() {
                   currentAnimatedNodeId={currentAnimatedNodeId}
                   visitedIds={visitedIds}
                   matchIds={matchIds}
+                  edgePulseEnabled={animationEnabled && animationRunning}
                   onSelectNode={(node) => {
                     if (lcaMode) {
                       if (lcaNodeA === null) {
                         setLcaNodeA(node.id);
                       } else if (lcaNodeB === null && lcaNodeA !== node.id) {
                         setLcaNodeB(node.id);
-                        // Auto-trigger LCA calculation
                         setLcaLoading(true);
                         findLCA({ tree, nodeIdA: lcaNodeA, nodeIdB: node.id })
                           .then((res) => {
@@ -1006,7 +1088,6 @@ export default function ExplorerPage() {
                             setLcaLoading(false);
                           });
                       } else if (lcaNodeA === node.id || lcaNodeB === node.id) {
-                        // Deselect if clicked again
                         if (lcaNodeA === node.id) setLcaNodeA(null);
                         if (lcaNodeB === node.id) setLcaNodeB(null);
                         setLcaResultNodeId(null);
