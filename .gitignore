@@ -5,6 +5,9 @@
 # Exclude docs/superpowers folder
 docs/superpowers/
 
+# Exclude PDF files in root
+/*.pdf
+
 # LaTeX intermediate and build files
 *.aux
 *.lof
