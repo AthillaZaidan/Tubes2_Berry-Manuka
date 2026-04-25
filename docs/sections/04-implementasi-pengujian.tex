@@ -260,7 +260,7 @@ Fungsi \texttt{GetPath} mengembalikan jalur dari suatu node ke root dengan cara 
 \textit{Backend} dikemas menggunakan Docker dengan pendekatan \textit{multi-stage build}:
 
 \begin{enumerate}
-    \item \textbf{Stage 1 (Builder)}: Menggunakan \textit{image} \texttt{golang:1.24-alpine}. Dependensi diunduh terlebih dahulu (\texttt{go mod download}) sebelum menyalin kode sumber. Binary dikompilasi dengan \texttt{CGO\_ENABLED=0} dan \texttt{GOOS=linux} untuk menghasilkan \textit{static binary}.
+    \item \textbf{Stage 1 (Builder)}: Menggunakan \textit{image} \texttt{golang:1.25-alpine}. Dependensi diunduh terlebih dahulu (\texttt{go mod download}) sebelum menyalin kode sumber. Binary dikompilasi dengan \texttt{CGO\_ENABLED=0} dan \texttt{GOOS=linux} untuk menghasilkan \textit{static binary}.
     \item \textbf{Stage 2 (Runner)}: Menggunakan \textit{image} \texttt{alpine:latest} yang sangat ringan. Hanya binary hasil kompilasi yang disalin dari \textit{stage} pertama sehingga ukuran \textit{image} final jauh lebih kecil.
 \end{enumerate}
 
